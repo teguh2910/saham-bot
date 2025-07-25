@@ -24,6 +24,7 @@ class SahamBot {
         this.initializeEventListeners();
         this.loadSettings();
         this.loadChatHistory();
+        this.updateSessionInfo();
     }
     
     generateSessionId() {
@@ -88,7 +89,25 @@ class SahamBot {
         document.getElementById('clearAllHistory').addEventListener('click', () => {
             this.clearAllHistory();
         });
+
+        // New chat modal
+        document.getElementById('closeNewChat').addEventListener('click', () => {
+            this.hideNewChatModal();
+        });
+
+        document.getElementById('cancelNewChat').addEventListener('click', () => {
+            this.hideNewChatModal();
+        });
+
+        document.getElementById('confirmNewChat').addEventListener('click', () => {
+            this.startNewChatSession();
+        });
         
+        // New chat session
+        document.getElementById('newChatBtn').addEventListener('click', () => {
+            this.showNewChatModal();
+        });
+
         // Clear chat
         document.getElementById('clearChat').addEventListener('click', () => {
             this.clearChat();
@@ -104,6 +123,12 @@ class SahamBot {
         document.getElementById('historyModal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('historyModal')) {
                 this.hideHistory();
+            }
+        });
+
+        document.getElementById('newChatModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('newChatModal')) {
+                this.hideNewChatModal();
             }
         });
     }
@@ -605,6 +630,7 @@ class SahamBot {
         } else {
             status.textContent = 'Configure webhook';
         }
+        this.updateSessionInfo();
     }
     
     isValidUrl(string) {
@@ -617,33 +643,21 @@ class SahamBot {
     }
     
     clearChat() {
-        // Remove all messages except welcome message
-        const messages = this.messagesContainer.querySelectorAll('.message, .error-message, .success-message');
-        messages.forEach(message => message.remove());
+        if (confirm('Clear current chat? This will permanently delete the current conversation.')) {
+            // Remove all messages from display
+            const messages = this.messagesContainer.querySelectorAll('.message, .error-message, .success-message');
+            messages.forEach(message => message.remove());
 
-        // Clear chat history for current session
-        this.chatHistory = this.chatHistory.filter(msg =>
-            msg.sessionId !== this.settings.sessionId
-        );
-        localStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
+            // Clear chat history for current session
+            this.chatHistory = this.chatHistory.filter(msg =>
+                msg.sessionId !== this.settings.sessionId
+            );
+            localStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
 
-        // Show welcome message again
-        if (!this.messagesContainer.querySelector('.welcome-message')) {
-            const welcomeDiv = document.createElement('div');
-            welcomeDiv.className = 'welcome-message';
-            welcomeDiv.innerHTML = `
-                <div class="welcome-content">
-                    <i class="fas fa-robot"></i>
-                    <h3>Welcome to Saham Bot!</h3>
-                    <p>I can help you with:</p>
-                    <ul>
-                        <li><strong>Stock Analysis:</strong> Type "IDX:BBCA" for stock analysis</li>
-                        <li><strong>General Chat:</strong> Ask any questions about stocks</li>
-                        <li><strong>Image Analysis:</strong> Upload images for analysis</li>
-                    </ul>
-                </div>
-            `;
-            this.messagesContainer.appendChild(welcomeDiv);
+            // Show welcome message again
+            this.showWelcomeMessage();
+
+            this.showSuccess('Current chat cleared successfully!');
         }
     }
 
@@ -666,6 +680,9 @@ class SahamBot {
 
         // Save to localStorage
         localStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
+
+        // Update session info display
+        this.updateSessionInfo();
     }
 
     loadChatHistory() {
@@ -896,6 +913,94 @@ class SahamBot {
         }, 3000);
     }
 
+    showNewChatModal() {
+        document.getElementById('newChatModal').style.display = 'flex';
+    }
+
+    hideNewChatModal() {
+        document.getElementById('newChatModal').style.display = 'none';
+    }
+
+    startNewChatSession() {
+        // Save current session if it has messages
+        const currentSessionMessages = this.chatHistory.filter(msg =>
+            msg.sessionId === this.settings.sessionId
+        );
+
+        if (currentSessionMessages.length > 0) {
+            // Current session already saved automatically
+            this.showSuccess(`Previous session saved with ${currentSessionMessages.length} messages`);
+        }
+
+        // Generate new session ID
+        const newSessionId = this.generateSessionId();
+
+        // Update settings
+        this.settings.sessionId = newSessionId;
+        localStorage.setItem('sessionId', newSessionId);
+
+        // Clear current chat display
+        this.clearChatDisplay();
+
+        // Hide modal
+        this.hideNewChatModal();
+
+        // Show welcome message for new session
+        this.showWelcomeMessage();
+
+        // Update status
+        this.updateSessionStatus();
+
+        this.showSuccess('🎉 New chat session started! Previous conversation saved to history.');
+    }
+
+    clearChatDisplay() {
+        // Remove all messages from display only (don't affect history)
+        const messages = this.messagesContainer.querySelectorAll('.message, .error-message, .success-message');
+        messages.forEach(message => message.remove());
+    }
+
+    showWelcomeMessage() {
+        if (!this.messagesContainer.querySelector('.welcome-message')) {
+            const welcomeDiv = document.createElement('div');
+            welcomeDiv.className = 'welcome-message';
+            welcomeDiv.innerHTML = `
+                <div class="welcome-content">
+                    <i class="fas fa-robot"></i>
+                    <h3>Welcome to Saham Bot!</h3>
+                    <p>I can help you with:</p>
+                    <ul>
+                        <li><strong>Stock Analysis:</strong> Type "IDX:BBCA" for stock analysis</li>
+                        <li><strong>General Chat:</strong> Ask any questions about stocks</li>
+                        <li><strong>Image Analysis:</strong> Upload images for analysis</li>
+                    </ul>
+                </div>
+            `;
+            this.messagesContainer.appendChild(welcomeDiv);
+        }
+    }
+
+    updateSessionStatus() {
+        const status = document.getElementById('status');
+        if (status) {
+            status.textContent = 'New Session';
+            setTimeout(() => {
+                status.textContent = this.settings.webhookUrl ? 'Ready' : 'Configure webhook';
+            }, 2000);
+        }
+        this.updateSessionInfo();
+    }
+
+    updateSessionInfo() {
+        const sessionInfo = document.getElementById('sessionInfo');
+        if (sessionInfo) {
+            const sessionId = this.settings.sessionId;
+            const shortId = sessionId.replace('web-session-', '');
+            const messageCount = this.chatHistory.filter(msg => msg.sessionId === sessionId).length;
+            sessionInfo.textContent = `Session: ${shortId} (${messageCount} messages)`;
+        }
+    }
+
     formatBotMessage(text) {
         // Enhanced formatting for bot messages
         let formatted = text;
@@ -926,8 +1031,8 @@ class SahamBot {
     }
 
     formatStockAnalysis(text) {
-        // Extract stock information
-        const stockMatch = text.match(/\*\*Nama Saham:\s*(.*?)\*\*/i);
+        // Extract stock information with more flexible patterns
+        const stockMatch = text.match(/\*\*Nama Saham:\s*(.*?)\*\*/i) || text.match(/IDX:([A-Z]+)/i);
         const buyMatch = text.match(/\*\*BUY:\s*(.*?)\*\*/i);
         const tp1Match = text.match(/\*\*TP1:\s*(.*?)\*\*/i);
         const tp2Match = text.match(/\*\*TP2:\s*(.*?)\*\*/i);
@@ -935,12 +1040,16 @@ class SahamBot {
 
         let formatted = text;
 
+        // Clean up the original text first
+        formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
         // Create structured stock analysis layout
         if (stockMatch || buyMatch) {
             let stockAnalysisHtml = '<div class="stock-analysis">';
 
             if (stockMatch) {
-                stockAnalysisHtml += `<div class="stock-name">${stockMatch[1].trim()}</div>`;
+                const stockName = stockMatch[1] ? stockMatch[1].trim() : stockMatch[0];
+                stockAnalysisHtml += `<div class="stock-name">📈 ${stockName}</div>`;
             }
 
             if (buyMatch || tp1Match || tp2Match || clMatch) {
@@ -948,8 +1057,8 @@ class SahamBot {
 
                 if (buyMatch) {
                     stockAnalysisHtml += `
-                        <div class="trading-level">
-                            <div class="label">BUY</div>
+                        <div class="trading-level buy">
+                            <div class="label">🟢 BUY</div>
                             <div class="value">${buyMatch[1].trim()}</div>
                         </div>
                     `;
@@ -957,8 +1066,8 @@ class SahamBot {
 
                 if (tp1Match) {
                     stockAnalysisHtml += `
-                        <div class="trading-level">
-                            <div class="label">TP1</div>
+                        <div class="trading-level target">
+                            <div class="label">🎯 TP1</div>
                             <div class="value">${tp1Match[1].trim()}</div>
                         </div>
                     `;
@@ -966,8 +1075,8 @@ class SahamBot {
 
                 if (tp2Match) {
                     stockAnalysisHtml += `
-                        <div class="trading-level">
-                            <div class="label">TP2</div>
+                        <div class="trading-level target">
+                            <div class="label">🎯 TP2</div>
                             <div class="value">${tp2Match[1].trim()}</div>
                         </div>
                     `;
@@ -975,8 +1084,8 @@ class SahamBot {
 
                 if (clMatch) {
                     stockAnalysisHtml += `
-                        <div class="trading-level">
-                            <div class="label">CL</div>
+                        <div class="trading-level stop">
+                            <div class="label">🛑 CL</div>
                             <div class="value">${clMatch[1].trim()}</div>
                         </div>
                     `;
@@ -988,7 +1097,24 @@ class SahamBot {
             stockAnalysisHtml += '</div>';
 
             // Replace the stock info section with formatted version
-            formatted = formatted.replace(/\*\*Nama Saham:.*?\*\*CL:.*?\*\*/is, stockAnalysisHtml);
+            // Try multiple patterns to catch different formats
+            let replaced = false;
+
+            // Pattern 1: Full stock analysis block
+            if (formatted.match(/\*\*Nama Saham:.*?\*\*CL:.*?\*\*/is)) {
+                formatted = formatted.replace(/\*\*Nama Saham:.*?\*\*CL:.*?\*\*/is, stockAnalysisHtml);
+                replaced = true;
+            }
+            // Pattern 2: Just the trading levels
+            else if (formatted.match(/\*\*BUY:.*?\*\*CL:.*?\*\*/is)) {
+                formatted = formatted.replace(/\*\*BUY:.*?\*\*CL:.*?\*\*/is, stockAnalysisHtml);
+                replaced = true;
+            }
+
+            // If no replacement was made, prepend the analysis
+            if (!replaced) {
+                formatted = stockAnalysisHtml + '<br><br>' + formatted;
+            }
         }
 
         // Format the reason section

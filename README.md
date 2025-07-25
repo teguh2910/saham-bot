@@ -108,13 +108,16 @@ https://your-n8n-instance.com/webhook/your-webhook-id
 - Supports JPEG, PNG, and other common formats
 - Images automatically uploaded to hosting services
 
-### Chat History
+### Chat History & Session Management
+- **New Chat Sessions**: Click the plus button (➕) to start fresh conversations
 - **Automatic Saving**: All conversations are automatically saved
 - **Session Management**: Each session has a unique ID for organization
+- **Session Switching**: Seamlessly switch between different chat sessions
 - **History Browser**: Click the history button (🕒) to view past conversations
 - **Session Loading**: Load any previous session to continue conversations
 - **Export Feature**: Export chat history as JSON files
 - **Session Deletion**: Delete individual sessions or clear all history
+- **Session Info**: View current session ID and message count in header
 - **Cross-Session Storage**: History persists across browser sessions
 
 ## Troubleshooting

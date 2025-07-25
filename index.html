@@ -18,13 +18,17 @@
                 <div class="header-text">
                     <h3>Saham Bot</h3>
                     <span class="status" id="status">Online</span>
+                    <span class="session-info" id="sessionInfo">Session: Loading...</span>
                 </div>
             </div>
             <div class="header-actions">
+                <button class="btn-icon" id="newChatBtn" title="New Chat Session">
+                    <i class="fas fa-plus"></i>
+                </button>
                 <button class="btn-icon" id="historyBtn" title="Chat History">
                     <i class="fas fa-history"></i>
                 </button>
-                <button class="btn-icon" id="clearChat" title="Clear Chat">
+                <button class="btn-icon" id="clearChat" title="Clear Current Chat">
                     <i class="fas fa-trash"></i>
                 </button>
                 <button class="btn-icon" id="settingsBtn" title="Settings">
@@ -141,6 +145,39 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" id="closeHistoryFooter">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Chat Confirmation Modal -->
+    <div class="modal" id="newChatModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Start New Chat Session</h3>
+                <button class="btn-close" id="closeNewChat">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="new-chat-info">
+                    <div class="info-icon">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
+                    <p>Starting a new chat session will:</p>
+                    <ul>
+                        <li>✅ Save your current conversation to history</li>
+                        <li>✅ Create a fresh chat with new session ID</li>
+                        <li>✅ Clear the current conversation view</li>
+                        <li>✅ Keep all your settings and preferences</li>
+                    </ul>
+                    <p><strong>Your current chat will be preserved in history and can be accessed anytime.</strong></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelNewChat">Cancel</button>
+                <button class="btn-primary" id="confirmNewChat">
+                    <i class="fas fa-plus"></i> Start New Chat
+                </button>
             </div>
         </div>
     </div>
