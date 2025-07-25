@@ -13,7 +13,8 @@ class SahamBot {
         this.settings = {
             webhookUrl: localStorage.getItem('webhookUrl') || '',
             sessionId: localStorage.getItem('sessionId') || this.generateSessionId(),
-            userPhone: localStorage.getItem('userPhone') || '6281234567890'
+            userPhone: localStorage.getItem('userPhone') || '6281234567890',
+            imgbbApiKey: localStorage.getItem('imgbbApiKey') || ''
         };
         
         this.initializeEventListeners();
@@ -286,27 +287,27 @@ class SahamBot {
             this.showSettings();
             return;
         }
-        
+
         // Show image in chat
         const imageUrl = URL.createObjectURL(file);
         this.addImageMessage(imageUrl, 'user');
-        
+
         // Show typing indicator
         this.showTyping();
-        
+
         try {
-            // Convert image to base64
-            const base64 = await this.fileToBase64(file);
-            
-            // Prepare payload with image
-            const payload = this.prepareImagePayload(base64, file.type);
-            
+            // Upload image to hosting service and get URL
+            const hostedImageUrl = await this.uploadImageToHost(file);
+
+            // Prepare payload with image URL (not base64)
+            const payload = this.prepareImageUrlPayload(hostedImageUrl, file.type);
+
             // Send to n8n
             const response = await this.sendToN8n(payload);
-            
+
             // Handle response
             await this.handleResponse(response);
-            
+
         } catch (error) {
             console.error('Error uploading image:', error);
             this.showError('Failed to upload image. Please try again.');
@@ -315,10 +316,80 @@ class SahamBot {
         }
     }
     
-    prepareImagePayload(base64Data, mimeType) {
+    async uploadImageToHost(file) {
+        // Option 1: Use imgbb.com (free image hosting) - if API key is configured
+        if (this.settings.imgbbApiKey) {
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${this.settings.imgbbApiKey}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Image uploaded to ImgBB:', result.data.url);
+                    return result.data.url;
+                }
+            } catch (error) {
+                console.log('ImgBB upload failed, trying alternative...', error);
+            }
+        }
+
+        // Option 2: Use temporary file hosting (no API key needed)
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch('https://tmpfiles.org/api/v1/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                return result.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+            }
+        } catch (error) {
+            console.log('TmpFiles upload failed, trying base64 fallback...');
+        }
+
+        // Option 3: Fallback to base64 (original method)
+        const base64 = await this.fileToBase64(file);
+        return base64;
+    }
+
+    prepareImageUrlPayload(imageUrl, mimeType) {
         const now = new Date();
         const messageId = 'web_img_' + now.getTime();
-        
+
+        // If it's a base64 fallback, use the original format
+        if (imageUrl.startsWith('data:')) {
+            return {
+                session: this.settings.sessionId,
+                payload: {
+                    id: messageId,
+                    from: this.settings.userPhone + '@c.us',
+                    body: '',
+                    _data: {
+                        body: '',
+                        from: this.settings.userPhone + '@c.us',
+                        quotedParticipant: null,
+                        mentionedJidList: []
+                    },
+                    hasMedia: true,
+                    media: {
+                        url: imageUrl,
+                        mimetype: mimeType
+                    },
+                    timestamp: Math.floor(now.getTime() / 1000)
+                }
+            };
+        }
+
+        // For hosted URLs, use a simpler format
         return {
             session: this.settings.sessionId,
             payload: {
@@ -333,12 +404,17 @@ class SahamBot {
                 },
                 hasMedia: true,
                 media: {
-                    url: base64Data,
+                    url: imageUrl,
                     mimetype: mimeType
                 },
                 timestamp: Math.floor(now.getTime() / 1000)
             }
         };
+    }
+
+    prepareImagePayload(base64Data, mimeType) {
+        // Keep original method for backward compatibility
+        return this.prepareImageUrlPayload(base64Data, mimeType);
     }
     
     fileToBase64(file) {
@@ -432,7 +508,8 @@ class SahamBot {
         document.getElementById('webhookUrl').value = this.settings.webhookUrl;
         document.getElementById('sessionId').value = this.settings.sessionId;
         document.getElementById('userPhone').value = this.settings.userPhone;
-        
+        document.getElementById('imgbbApiKey').value = this.settings.imgbbApiKey;
+
         this.settingsModal.style.display = 'flex';
     }
     
@@ -445,17 +522,19 @@ class SahamBot {
         this.settings.webhookUrl = document.getElementById('webhookUrl').value.trim();
         this.settings.sessionId = document.getElementById('sessionId').value.trim() || this.generateSessionId();
         this.settings.userPhone = document.getElementById('userPhone').value.trim();
-        
+        this.settings.imgbbApiKey = document.getElementById('imgbbApiKey').value.trim();
+
         // Validate webhook URL
         if (this.settings.webhookUrl && !this.isValidUrl(this.settings.webhookUrl)) {
             this.showError('Please enter a valid webhook URL.');
             return;
         }
-        
+
         // Save to localStorage
         localStorage.setItem('webhookUrl', this.settings.webhookUrl);
         localStorage.setItem('sessionId', this.settings.sessionId);
         localStorage.setItem('userPhone', this.settings.userPhone);
+        localStorage.setItem('imgbbApiKey', this.settings.imgbbApiKey);
         
         this.hideSettings();
         
