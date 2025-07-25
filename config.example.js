@@ -4,7 +4,7 @@
 const CONFIG = {
     // Your n8n webhook URL
     // Get this from your n8n workflow webhook node
-    webhookUrl: 'https://your-n8n-instance.com/webhook/your-webhook-id',
+    webhookUrl: 'https://worker1.servercikarang.cloud/webhook/teguh',
     
     // Default session ID for the web interface
     // This will be used for conversation memory in your n8n workflow

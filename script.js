@@ -11,7 +11,7 @@ class SahamBot {
         
         // Settings
         this.settings = {
-            webhookUrl: localStorage.getItem('webhookUrl') || '',
+            webhookUrl: localStorage.getItem('webhookUrl') || 'https://worker1.servercikarang.cloud/webhook/teguh',
             sessionId: localStorage.getItem('sessionId') || this.generateSessionId(),
             userPhone: localStorage.getItem('userPhone') || '6281234567890',
             imgbbApiKey: localStorage.getItem('imgbbApiKey') || ''
@@ -477,7 +477,14 @@ class SahamBot {
 
         if (text) {
             const textDiv = document.createElement('div');
-            textDiv.textContent = text;
+
+            // Format bot messages with enhanced styling
+            if (sender === 'bot') {
+                textDiv.innerHTML = this.formatBotMessage(text);
+            } else {
+                textDiv.textContent = text;
+            }
+
             bubbleDiv.appendChild(textDiv);
         }
 
@@ -700,7 +707,14 @@ class SahamBot {
 
         if (message.text) {
             const textDiv = document.createElement('div');
-            textDiv.textContent = message.text;
+
+            // Format bot messages with enhanced styling
+            if (message.sender === 'bot') {
+                textDiv.innerHTML = this.formatBotMessage(message.text);
+            } else {
+                textDiv.textContent = message.text;
+            }
+
             bubbleDiv.appendChild(textDiv);
         }
 
@@ -794,11 +808,21 @@ class SahamBot {
         const msgTime = new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         const imageHtml = message.imageUrl ? `<img src="${message.imageUrl}" class="history-message-image" alt="Message image">` : '';
 
+        let textHtml = '';
+        if (message.text) {
+            if (message.sender === 'bot') {
+                // Use simplified formatting for history view
+                textHtml = `<div>${this.formatBotMessage(message.text)}</div>`;
+            } else {
+                textHtml = `<div>${message.text}</div>`;
+            }
+        }
+
         return `
             <div class="history-message ${message.sender}">
                 <div class="history-message-bubble">
                     ${imageHtml}
-                    ${message.text ? `<div>${message.text}</div>` : ''}
+                    ${textHtml}
                     <div class="history-message-time">${msgTime}</div>
                 </div>
             </div>
@@ -870,6 +894,214 @@ class SahamBot {
                 successDiv.parentNode.removeChild(successDiv);
             }
         }, 3000);
+    }
+
+    formatBotMessage(text) {
+        // Enhanced formatting for bot messages
+        let formatted = text;
+
+        // Detect and format stock analysis
+        if (this.isStockAnalysis(text)) {
+            return this.formatStockAnalysis(text);
+        }
+
+        // General formatting improvements
+        formatted = this.applyGeneralFormatting(formatted);
+
+        return formatted;
+    }
+
+    isStockAnalysis(text) {
+        // Check if message contains stock analysis patterns
+        const stockPatterns = [
+            /\*\*Nama Saham:/i,
+            /\*\*BUY:/i,
+            /\*\*TP1:/i,
+            /\*\*TP2:/i,
+            /\*\*CL:/i,
+            /IDX:[A-Z]+/i
+        ];
+
+        return stockPatterns.some(pattern => pattern.test(text));
+    }
+
+    formatStockAnalysis(text) {
+        // Extract stock information
+        const stockMatch = text.match(/\*\*Nama Saham:\s*(.*?)\*\*/i);
+        const buyMatch = text.match(/\*\*BUY:\s*(.*?)\*\*/i);
+        const tp1Match = text.match(/\*\*TP1:\s*(.*?)\*\*/i);
+        const tp2Match = text.match(/\*\*TP2:\s*(.*?)\*\*/i);
+        const clMatch = text.match(/\*\*CL:\s*(.*?)\*\*/i);
+
+        let formatted = text;
+
+        // Create structured stock analysis layout
+        if (stockMatch || buyMatch) {
+            let stockAnalysisHtml = '<div class="stock-analysis">';
+
+            if (stockMatch) {
+                stockAnalysisHtml += `<div class="stock-name">${stockMatch[1].trim()}</div>`;
+            }
+
+            if (buyMatch || tp1Match || tp2Match || clMatch) {
+                stockAnalysisHtml += '<div class="trading-levels">';
+
+                if (buyMatch) {
+                    stockAnalysisHtml += `
+                        <div class="trading-level">
+                            <div class="label">BUY</div>
+                            <div class="value">${buyMatch[1].trim()}</div>
+                        </div>
+                    `;
+                }
+
+                if (tp1Match) {
+                    stockAnalysisHtml += `
+                        <div class="trading-level">
+                            <div class="label">TP1</div>
+                            <div class="value">${tp1Match[1].trim()}</div>
+                        </div>
+                    `;
+                }
+
+                if (tp2Match) {
+                    stockAnalysisHtml += `
+                        <div class="trading-level">
+                            <div class="label">TP2</div>
+                            <div class="value">${tp2Match[1].trim()}</div>
+                        </div>
+                    `;
+                }
+
+                if (clMatch) {
+                    stockAnalysisHtml += `
+                        <div class="trading-level">
+                            <div class="label">CL</div>
+                            <div class="value">${clMatch[1].trim()}</div>
+                        </div>
+                    `;
+                }
+
+                stockAnalysisHtml += '</div>';
+            }
+
+            stockAnalysisHtml += '</div>';
+
+            // Replace the stock info section with formatted version
+            formatted = formatted.replace(/\*\*Nama Saham:.*?\*\*CL:.*?\*\*/is, stockAnalysisHtml);
+        }
+
+        // Format the reason section
+        const reasonMatch = text.match(/\*\*Alasan:\*\*(.*)/is);
+        if (reasonMatch) {
+            const reasonText = reasonMatch[1].trim();
+            const reasonHtml = `
+                <div class="reason-section">
+                    <h4>📊 Analisis Teknikal</h4>
+                    ${this.formatReasonText(reasonText)}
+                </div>
+            `;
+            formatted = formatted.replace(/\*\*Alasan:\*\*.*$/is, reasonHtml);
+        }
+
+        return this.applyGeneralFormatting(formatted);
+    }
+
+    formatReasonText(text) {
+        let formatted = text;
+
+        // Format numbered points
+        formatted = formatted.replace(/(\d+\.\s*\*\*[^*]+\*\*:)/g, '<p><strong>$1</strong></p>');
+
+        // Format bold text
+        formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+        // Format italic text
+        formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+        // Format technical terms
+        const technicalTerms = [
+            'Bullish Divergence', 'MACD', 'RSI', 'Support', 'Resistance',
+            'Breakout', 'Volume', 'Moving Average', 'Fibonacci', 'Candlestick'
+        ];
+
+        technicalTerms.forEach(term => {
+            const regex = new RegExp(`\\b(${term})\\b`, 'gi');
+            formatted = formatted.replace(regex, '<span class="highlight">$1</span>');
+        });
+
+        // Format price levels
+        formatted = formatted.replace(/(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/g, '<code>$1</code>');
+
+        // Convert line breaks to paragraphs
+        formatted = formatted.split('\n').filter(line => line.trim()).map(line => `<p>${line.trim()}</p>`).join('');
+
+        return formatted;
+    }
+
+    applyGeneralFormatting(text) {
+        let formatted = text;
+
+        // Format headers (markdown-style)
+        formatted = formatted.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+        formatted = formatted.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+        formatted = formatted.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+
+        // Format bold text that wasn't caught before
+        formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+        // Format italic text
+        formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+        // Format code blocks
+        formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+        // Format line breaks
+        formatted = formatted.replace(/\n\n/g, '</p><p>');
+        formatted = formatted.replace(/\n/g, '<br>');
+
+        // Wrap in paragraph if not already wrapped
+        if (!formatted.includes('<p>') && !formatted.includes('<div>') && !formatted.includes('<h')) {
+            formatted = `<p>${formatted}</p>`;
+        }
+
+        // Add emoji for better visual appeal
+        formatted = this.addContextualEmojis(formatted);
+
+        return formatted;
+    }
+
+    addContextualEmojis(text) {
+        let formatted = text;
+
+        // Add emojis based on content
+        const emojiMap = {
+            'BUY': '🟢',
+            'SELL': '🔴',
+            'TP1': '🎯',
+            'TP2': '🎯',
+            'Target': '🎯',
+            'Stop Loss': '🛑',
+            'CL': '🛑',
+            'Bullish': '📈',
+            'Bearish': '📉',
+            'Volume': '📊',
+            'Support': '🔵',
+            'Resistance': '🔴',
+            'Breakout': '🚀',
+            'Analisis': '📊',
+            'Rekomendasi': '💡',
+            'Peringatan': '⚠️',
+            'Profit': '💰',
+            'Loss': '⚠️'
+        };
+
+        Object.entries(emojiMap).forEach(([term, emoji]) => {
+            const regex = new RegExp(`\\b(${term})\\b`, 'gi');
+            formatted = formatted.replace(regex, `${emoji} $1`);
+        });
+
+        return formatted;
     }
 }
 
