@@ -623,20 +623,159 @@ body {
     border-left: 4px solid #2e7d32;
 }
 
+/* Chat History Styles */
+.history-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e9edef;
+}
+
+.history-stats {
+    color: #54656f;
+    font-size: 14px;
+}
+
+.history-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.history-actions button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    padding: 6px 12px;
+}
+
+.history-sessions {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.history-session {
+    border: 1px solid #e9edef;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    overflow: hidden;
+}
+
+.session-header {
+    background: #f0f2f5;
+    padding: 12px 15px;
+    border-bottom: 1px solid #e9edef;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.session-header:hover {
+    background: #e9edef;
+}
+
+.session-info h4 {
+    margin: 0;
+    font-size: 14px;
+    color: #111b21;
+}
+
+.session-info p {
+    margin: 2px 0 0 0;
+    font-size: 12px;
+    color: #54656f;
+}
+
+.session-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.session-actions button {
+    background: none;
+    border: none;
+    color: #54656f;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.session-actions button:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.session-messages {
+    padding: 15px;
+    background: white;
+    display: none;
+}
+
+.session-messages.expanded {
+    display: block;
+}
+
+.history-message {
+    display: flex;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+
+.history-message.user {
+    justify-content: flex-end;
+}
+
+.history-message-bubble {
+    max-width: 70%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    word-wrap: break-word;
+}
+
+.history-message.user .history-message-bubble {
+    background: #25D366;
+    color: white;
+}
+
+.history-message.bot .history-message-bubble {
+    background: #f0f2f5;
+    color: #111b21;
+}
+
+.history-message-time {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+
+.history-message-image {
+    max-width: 100px;
+    border-radius: 8px;
+    margin-top: 4px;
+}
+
 /* Scrollbar Styling */
-.messages-container::-webkit-scrollbar {
+.messages-container::-webkit-scrollbar,
+.history-sessions::-webkit-scrollbar {
     width: 6px;
 }
 
-.messages-container::-webkit-scrollbar-track {
+.messages-container::-webkit-scrollbar-track,
+.history-sessions::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.messages-container::-webkit-scrollbar-thumb {
+.messages-container::-webkit-scrollbar-thumb,
+.history-sessions::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.2);
     border-radius: 3px;
 }
 
-.messages-container::-webkit-scrollbar-thumb:hover {
+.messages-container::-webkit-scrollbar-thumb:hover,
+.history-sessions::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.3);
 }

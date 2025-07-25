@@ -16,9 +16,14 @@ class SahamBot {
             userPhone: localStorage.getItem('userPhone') || '6281234567890',
             imgbbApiKey: localStorage.getItem('imgbbApiKey') || ''
         };
+
+        // Chat history
+        this.chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+        this.maxHistoryItems = 50; // Limit history to prevent storage overflow
         
         this.initializeEventListeners();
         this.loadSettings();
+        this.loadChatHistory();
     }
     
     generateSessionId() {
@@ -50,17 +55,38 @@ class SahamBot {
         document.getElementById('settingsBtn').addEventListener('click', () => {
             this.showSettings();
         });
-        
+
         document.getElementById('closeSettings').addEventListener('click', () => {
             this.hideSettings();
         });
-        
+
         document.getElementById('cancelSettings').addEventListener('click', () => {
             this.hideSettings();
         });
-        
+
         document.getElementById('saveSettings').addEventListener('click', () => {
             this.saveSettings();
+        });
+
+        // History modal
+        document.getElementById('historyBtn').addEventListener('click', () => {
+            this.showHistory();
+        });
+
+        document.getElementById('closeHistory').addEventListener('click', () => {
+            this.hideHistory();
+        });
+
+        document.getElementById('closeHistoryFooter').addEventListener('click', () => {
+            this.hideHistory();
+        });
+
+        document.getElementById('exportHistory').addEventListener('click', () => {
+            this.exportHistory();
+        });
+
+        document.getElementById('clearAllHistory').addEventListener('click', () => {
+            this.clearAllHistory();
         });
         
         // Clear chat
@@ -72,6 +98,12 @@ class SahamBot {
         this.settingsModal.addEventListener('click', (e) => {
             if (e.target === this.settingsModal) {
                 this.hideSettings();
+            }
+        });
+
+        document.getElementById('historyModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('historyModal')) {
+                this.hideHistory();
             }
         });
     }
@@ -427,12 +459,14 @@ class SahamBot {
     }
     
     addMessage(text, sender, imageUrl = null) {
+        const timestamp = new Date();
+
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${sender}`;
-        
+
         const bubbleDiv = document.createElement('div');
         bubbleDiv.className = 'message-bubble';
-        
+
         if (imageUrl) {
             const img = document.createElement('img');
             img.src = imageUrl;
@@ -440,28 +474,31 @@ class SahamBot {
             img.alt = 'Uploaded image';
             bubbleDiv.appendChild(img);
         }
-        
+
         if (text) {
             const textDiv = document.createElement('div');
             textDiv.textContent = text;
             bubbleDiv.appendChild(textDiv);
         }
-        
+
         const timeDiv = document.createElement('div');
         timeDiv.className = 'message-time';
-        timeDiv.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        timeDiv.textContent = timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         bubbleDiv.appendChild(timeDiv);
-        
+
         messageDiv.appendChild(bubbleDiv);
-        
+
         // Remove welcome message if it exists
         const welcomeMessage = this.messagesContainer.querySelector('.welcome-message');
         if (welcomeMessage) {
             welcomeMessage.remove();
         }
-        
+
         this.messagesContainer.appendChild(messageDiv);
         this.scrollToBottom();
+
+        // Save to chat history
+        this.saveChatMessage(text, sender, imageUrl, timestamp);
     }
     
     addImageMessage(imageUrl, sender) {
@@ -576,7 +613,13 @@ class SahamBot {
         // Remove all messages except welcome message
         const messages = this.messagesContainer.querySelectorAll('.message, .error-message, .success-message');
         messages.forEach(message => message.remove());
-        
+
+        // Clear chat history for current session
+        this.chatHistory = this.chatHistory.filter(msg =>
+            msg.sessionId !== this.settings.sessionId
+        );
+        localStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
+
         // Show welcome message again
         if (!this.messagesContainer.querySelector('.welcome-message')) {
             const welcomeDiv = document.createElement('div');
@@ -588,8 +631,6 @@ class SahamBot {
                     <p>I can help you with:</p>
                     <ul>
                         <li><strong>Stock Analysis:</strong> Type "IDX:BBCA" for stock analysis</li>
-                        <li><strong>Image Generation:</strong> Type "#GAMBAR: your description"</li>
-                        <li><strong>Crypto Info:</strong> Ask about cryptocurrency</li>
                         <li><strong>General Chat:</strong> Ask any questions about stocks</li>
                         <li><strong>Image Analysis:</strong> Upload images for analysis</li>
                     </ul>
@@ -598,9 +639,241 @@ class SahamBot {
             this.messagesContainer.appendChild(welcomeDiv);
         }
     }
+
+    saveChatMessage(text, sender, imageUrl, timestamp) {
+        const message = {
+            id: Date.now() + Math.random(),
+            text: text || '',
+            sender: sender,
+            imageUrl: imageUrl || null,
+            timestamp: timestamp.toISOString(),
+            sessionId: this.settings.sessionId
+        };
+
+        this.chatHistory.push(message);
+
+        // Limit history size
+        if (this.chatHistory.length > this.maxHistoryItems) {
+            this.chatHistory = this.chatHistory.slice(-this.maxHistoryItems);
+        }
+
+        // Save to localStorage
+        localStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
+    }
+
+    loadChatHistory() {
+        // Load and display chat history for current session
+        const currentSessionHistory = this.chatHistory.filter(msg =>
+            msg.sessionId === this.settings.sessionId
+        );
+
+        if (currentSessionHistory.length > 0) {
+            // Remove welcome message
+            const welcomeMessage = this.messagesContainer.querySelector('.welcome-message');
+            if (welcomeMessage) {
+                welcomeMessage.remove();
+            }
+
+            // Display historical messages
+            currentSessionHistory.forEach(msg => {
+                this.displayHistoricalMessage(msg);
+            });
+
+            this.scrollToBottom();
+        }
+    }
+
+    displayHistoricalMessage(message) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${message.sender}`;
+
+        const bubbleDiv = document.createElement('div');
+        bubbleDiv.className = 'message-bubble';
+
+        if (message.imageUrl) {
+            const img = document.createElement('img');
+            img.src = message.imageUrl;
+            img.className = 'message-image';
+            img.alt = 'Historical image';
+            bubbleDiv.appendChild(img);
+        }
+
+        if (message.text) {
+            const textDiv = document.createElement('div');
+            textDiv.textContent = message.text;
+            bubbleDiv.appendChild(textDiv);
+        }
+
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'message-time';
+        const msgTime = new Date(message.timestamp);
+        timeDiv.textContent = msgTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        bubbleDiv.appendChild(timeDiv);
+
+        messageDiv.appendChild(bubbleDiv);
+        this.messagesContainer.appendChild(messageDiv);
+    }
+
+    showHistory() {
+        this.populateHistoryModal();
+        document.getElementById('historyModal').style.display = 'flex';
+    }
+
+    hideHistory() {
+        document.getElementById('historyModal').style.display = 'none';
+    }
+
+    populateHistoryModal() {
+        const historyStats = document.getElementById('historyStats');
+        const historySessions = document.getElementById('historySessions');
+
+        // Group messages by session
+        const sessionGroups = {};
+        this.chatHistory.forEach(msg => {
+            if (!sessionGroups[msg.sessionId]) {
+                sessionGroups[msg.sessionId] = [];
+            }
+            sessionGroups[msg.sessionId].push(msg);
+        });
+
+        // Update stats
+        const totalSessions = Object.keys(sessionGroups).length;
+        const totalMessages = this.chatHistory.length;
+        historyStats.textContent = `${totalSessions} sessions, ${totalMessages} messages`;
+
+        // Clear previous content
+        historySessions.innerHTML = '';
+
+        // Create session elements
+        Object.entries(sessionGroups).forEach(([sessionId, messages]) => {
+            const sessionDiv = this.createSessionElement(sessionId, messages);
+            historySessions.appendChild(sessionDiv);
+        });
+
+        if (totalSessions === 0) {
+            historySessions.innerHTML = '<p style="text-align: center; color: #54656f; padding: 40px;">No chat history found</p>';
+        }
+    }
+
+    createSessionElement(sessionId, messages) {
+        const sessionDiv = document.createElement('div');
+        sessionDiv.className = 'history-session';
+
+        const firstMessage = messages[0];
+        const messageCount = messages.length;
+
+        const sessionDate = new Date(firstMessage.timestamp).toLocaleDateString();
+        const sessionTime = new Date(firstMessage.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        const isCurrentSession = sessionId === this.settings.sessionId;
+
+        sessionDiv.innerHTML = `
+            <div class="session-header" onclick="this.parentElement.querySelector('.session-messages').classList.toggle('expanded')">
+                <div class="session-info">
+                    <h4>${isCurrentSession ? 'Current Session' : 'Session'} - ${sessionDate}</h4>
+                    <p>${messageCount} messages • Started at ${sessionTime}</p>
+                </div>
+                <div class="session-actions" onclick="event.stopPropagation()">
+                    <button onclick="window.sahamBotInstance.loadSession('${sessionId}')" title="Load Session">
+                        <i class="fas fa-upload"></i>
+                    </button>
+                    <button onclick="window.sahamBotInstance.deleteSession('${sessionId}')" title="Delete Session">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="session-messages">
+                ${messages.map(msg => this.createHistoryMessageElement(msg)).join('')}
+            </div>
+        `;
+
+        return sessionDiv;
+    }
+
+    createHistoryMessageElement(message) {
+        const msgTime = new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const imageHtml = message.imageUrl ? `<img src="${message.imageUrl}" class="history-message-image" alt="Message image">` : '';
+
+        return `
+            <div class="history-message ${message.sender}">
+                <div class="history-message-bubble">
+                    ${imageHtml}
+                    ${message.text ? `<div>${message.text}</div>` : ''}
+                    <div class="history-message-time">${msgTime}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    loadSession(sessionId) {
+        if (confirm('Load this session? Current chat will be cleared.')) {
+            // Clear current chat
+            this.clearChat();
+
+            // Update session ID
+            this.settings.sessionId = sessionId;
+            localStorage.setItem('sessionId', sessionId);
+
+            // Load the session
+            this.loadChatHistory();
+
+            // Close history modal
+            this.hideHistory();
+
+            this.showSuccess('Session loaded successfully!');
+        }
+    }
+
+    deleteSession(sessionId) {
+        if (confirm('Delete this session permanently?')) {
+            // Remove messages from this session
+            this.chatHistory = this.chatHistory.filter(msg => msg.sessionId !== sessionId);
+            localStorage.setItem('chatHistory', JSON.stringify(this.chatHistory));
+
+            // Refresh the history modal
+            this.populateHistoryModal();
+
+            this.showSuccess('Session deleted successfully!');
+        }
+    }
+
+    exportHistory() {
+        const dataStr = JSON.stringify(this.chatHistory, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `saham-bot-history-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+
+        this.showSuccess('Chat history exported successfully!');
+    }
+
+    clearAllHistory() {
+        if (confirm('Clear all chat history permanently? This cannot be undone.')) {
+            this.chatHistory = [];
+            localStorage.removeItem('chatHistory');
+            this.populateHistoryModal();
+            this.showSuccess('All chat history cleared!');
+        }
+    }
+
+    showSuccess(message) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'success-message';
+        successDiv.textContent = message;
+        this.messagesContainer.appendChild(successDiv);
+        this.scrollToBottom();
+
+        setTimeout(() => {
+            if (successDiv.parentNode) {
+                successDiv.parentNode.removeChild(successDiv);
+            }
+        }, 3000);
+    }
 }
 
 // Initialize the bot when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new SahamBot();
+    window.sahamBotInstance = new SahamBot();
 });

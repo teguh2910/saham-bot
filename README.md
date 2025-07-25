@@ -6,11 +6,13 @@ A frontend web application that replaces WhatsApp as the input/output channel fo
 
 - **WhatsApp-like Chat Interface**: Familiar messaging experience
 - **Stock Analysis**: Type `IDX:BBCA` for stock chart analysis
-- **Image Generation**: Type `#GAMBAR: description` for AI image generation
-- **Crypto Queries**: Ask questions about cryptocurrency
 - **General Chat**: AI-powered stock market discussions
 - **Image Analysis**: Upload images for AI analysis
+- **Chat History**: Automatic saving and restoration of conversations
+- **Session Management**: Multiple chat sessions with easy switching
 - **Real-time Typing Indicators**: Natural conversation flow
+- **Image Hosting**: Automatic upload to hosting services (ImgBB/TmpFiles)
+- **Export/Import**: Export chat history as JSON files
 - **Responsive Design**: Works on desktop and mobile
 
 ## Setup Instructions
@@ -104,6 +106,16 @@ https://your-n8n-instance.com/webhook/your-webhook-id
 - Upload images using the attachment button (📎)
 - AI analyzes the image content
 - Supports JPEG, PNG, and other common formats
+- Images automatically uploaded to hosting services
+
+### Chat History
+- **Automatic Saving**: All conversations are automatically saved
+- **Session Management**: Each session has a unique ID for organization
+- **History Browser**: Click the history button (🕒) to view past conversations
+- **Session Loading**: Load any previous session to continue conversations
+- **Export Feature**: Export chat history as JSON files
+- **Session Deletion**: Delete individual sessions or clear all history
+- **Cross-Session Storage**: History persists across browser sessions
 
 ## Troubleshooting
 
