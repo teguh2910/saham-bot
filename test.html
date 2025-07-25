@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saham Bot - Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .test-button {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #128C7E;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+        .payload-display {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 3px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🤖 Saham Bot Integration Test</h1>
+        <p>Use this page to test your n8n webhook integration before using the main chat interface.</p>
+        
+        <div class="test-section">
+            <h3>⚙️ Configuration</h3>
+            <label>n8n Webhook URL:</label>
+            <input type="url" id="webhookUrl" placeholder="https://your-n8n-instance.com/webhook/your-webhook-id">
+            
+            <label>Session ID:</label>
+            <input type="text" id="sessionId" value="test-session-001">
+            
+            <label>Phone Number:</label>
+            <input type="text" id="phoneNumber" value="6281234567890">
+            
+            <button class="test-button" onclick="saveConfig()">Save Configuration</button>
+            <div id="configResult" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Stock Analysis Test</h3>
+            <p>Test the stock analysis feature with IDX ticker symbols.</p>
+            <input type="text" id="stockTicker" value="IDX:BBCA" placeholder="IDX:BBCA">
+            <button class="test-button" onclick="testStockAnalysis()">Test Stock Analysis</button>
+            <div id="stockResult" class="test-result"></div>
+            <div id="stockPayload" class="payload-display" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎨 Image Generation Test</h3>
+            <p>Test the AI image generation feature.</p>
+            <input type="text" id="imagePrompt" value="#GAMBAR: beautiful sunset over mountains" placeholder="#GAMBAR: your description">
+            <button class="test-button" onclick="testImageGeneration()">Test Image Generation</button>
+            <div id="imageResult" class="test-result"></div>
+            <div id="imagePayload" class="payload-display" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>💰 Crypto Query Test</h3>
+            <p>Test crypto-related questions.</p>
+            <input type="text" id="cryptoQuery" value="What is the current Bitcoin price?" placeholder="Ask about cryptocurrency">
+            <button class="test-button" onclick="testCryptoQuery()">Test Crypto Query</button>
+            <div id="cryptoResult" class="test-result"></div>
+            <div id="cryptoPayload" class="payload-display" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>💬 General Chat Test</h3>
+            <p>Test general stock market questions.</p>
+            <input type="text" id="generalQuery" value="What is a good strategy for investing in Indonesian stocks?" placeholder="Ask a general question">
+            <button class="test-button" onclick="testGeneralChat()">Test General Chat</button>
+            <div id="generalResult" class="test-result"></div>
+            <div id="generalPayload" class="payload-display" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 Custom Message Test</h3>
+            <p>Test with your own custom message.</p>
+            <textarea id="customMessage" rows="3" placeholder="Enter your custom message here..."></textarea>
+            <button class="test-button" onclick="testCustomMessage()">Send Custom Message</button>
+            <div id="customResult" class="test-result"></div>
+            <div id="customPayload" class="payload-display" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Test Results Summary</h3>
+            <button class="test-button" onclick="runAllTests()">Run All Tests</button>
+            <button class="test-button" onclick="clearResults()">Clear Results</button>
+            <div id="summaryResult" class="test-result"></div>
+        </div>
+    </div>
+
+    <script>
+        let config = {
+            webhookUrl: '',
+            sessionId: 'test-session-001',
+            phoneNumber: '6281234567890'
+        };
+
+        function saveConfig() {
+            config.webhookUrl = document.getElementById('webhookUrl').value.trim();
+            config.sessionId = document.getElementById('sessionId').value.trim();
+            config.phoneNumber = document.getElementById('phoneNumber').value.trim();
+            
+            const result = document.getElementById('configResult');
+            
+            if (!config.webhookUrl) {
+                showResult('configResult', 'error', 'Please enter a webhook URL');
+                return;
+            }
+            
+            if (!isValidUrl(config.webhookUrl)) {
+                showResult('configResult', 'error', 'Please enter a valid URL');
+                return;
+            }
+            
+            localStorage.setItem('testConfig', JSON.stringify(config));
+            showResult('configResult', 'success', 'Configuration saved successfully!');
+        }
+
+        function loadConfig() {
+            const saved = localStorage.getItem('testConfig');
+            if (saved) {
+                config = JSON.parse(saved);
+                document.getElementById('webhookUrl').value = config.webhookUrl;
+                document.getElementById('sessionId').value = config.sessionId;
+                document.getElementById('phoneNumber').value = config.phoneNumber;
+            }
+        }
+
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function createPayload(message, messageType = 'general') {
+            const now = new Date();
+            const messageId = 'test_' + now.getTime();
+            
+            let fromField = config.phoneNumber + '@c.us';
+            
+            // Simulate different group sources based on message type
+            if (messageType === 'crypto') {
+                fromField = '120363400022989092@g.us';
+            } else if (messageType === 'stock') {
+                fromField = '120363401195590086@g.us';
+            }
+            
+            return {
+                session: config.sessionId,
+                payload: {
+                    id: messageId,
+                    from: fromField,
+                    body: message,
+                    _data: {
+                        body: message,
+                        from: fromField,
+                        quotedParticipant: null,
+                        mentionedJidList: []
+                    },
+                    hasMedia: false,
+                    timestamp: Math.floor(now.getTime() / 1000)
+                }
+            };
+        }
+
+        async function sendToWebhook(payload, resultId, payloadId) {
+            if (!config.webhookUrl) {
+                showResult(resultId, 'error', 'Please configure webhook URL first');
+                return;
+            }
+
+            // Show payload
+            document.getElementById(payloadId).textContent = JSON.stringify(payload, null, 2);
+            document.getElementById(payloadId).style.display = 'block';
+
+            showResult(resultId, 'info', 'Sending request...');
+
+            try {
+                const response = await fetch(config.webhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                showResult(resultId, 'success', `✅ Success! Response: ${JSON.stringify(result, null, 2)}`);
+                
+            } catch (error) {
+                showResult(resultId, 'error', `❌ Error: ${error.message}`);
+            }
+        }
+
+        function showResult(elementId, type, message) {
+            const element = document.getElementById(elementId);
+            element.className = `test-result ${type}`;
+            element.textContent = message;
+            element.style.display = 'block';
+        }
+
+        function testStockAnalysis() {
+            const ticker = document.getElementById('stockTicker').value.trim();
+            const payload = createPayload(ticker, 'stock');
+            sendToWebhook(payload, 'stockResult', 'stockPayload');
+        }
+
+        function testImageGeneration() {
+            const prompt = document.getElementById('imagePrompt').value.trim();
+            const payload = createPayload(prompt, 'image_gen');
+            sendToWebhook(payload, 'imageResult', 'imagePayload');
+        }
+
+        function testCryptoQuery() {
+            const query = document.getElementById('cryptoQuery').value.trim();
+            const payload = createPayload(query, 'crypto');
+            sendToWebhook(payload, 'cryptoResult', 'cryptoPayload');
+        }
+
+        function testGeneralChat() {
+            const query = document.getElementById('generalQuery').value.trim();
+            const payload = createPayload(query, 'general');
+            sendToWebhook(payload, 'generalResult', 'generalPayload');
+        }
+
+        function testCustomMessage() {
+            const message = document.getElementById('customMessage').value.trim();
+            if (!message) {
+                showResult('customResult', 'error', 'Please enter a message');
+                return;
+            }
+            const payload = createPayload(message, 'general');
+            sendToWebhook(payload, 'customResult', 'customPayload');
+        }
+
+        async function runAllTests() {
+            showResult('summaryResult', 'info', 'Running all tests...');
+            
+            const tests = [
+                () => testStockAnalysis(),
+                () => testImageGeneration(),
+                () => testCryptoQuery(),
+                () => testGeneralChat()
+            ];
+
+            for (let i = 0; i < tests.length; i++) {
+                tests[i]();
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds between tests
+            }
+
+            showResult('summaryResult', 'success', 'All tests completed! Check individual results above.');
+        }
+
+        function clearResults() {
+            const results = document.querySelectorAll('.test-result, .payload-display');
+            results.forEach(element => {
+                element.style.display = 'none';
+            });
+        }
+
+        // Load saved configuration on page load
+        window.addEventListener('load', loadConfig);
+    </script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+{
+  "examples": {
+    "stock_analysis_response": {
+      "description": "Response for stock analysis (IDX: messages)",
+      "node_type": "Respond to Webhook",
+      "configuration": {
+        "response_mode": "responseNode",
+        "response_data": {
+          "message": "={{ $('AI-chart').item.json.output }}",
+          "imageUrl": "={{ $('Get Chart URL').item.json.url }}",
+          "type": "stock_analysis",
+          "ticker": "={{ $('Set Ticker').item.json.ticker }}"
+        }
+      },
+      "example_output": {
+        "message": "Nama Saham: BBCA\nBUY: 128\nTP1: 145\nTP2: 170\nCL: 108\n\nAlasan: Technical analysis shows strong support levels...",
+        "imageUrl": "https://api.chart-img.com/v2/tradingview/advanced-chart/storage/abc123.png",
+        "type": "stock_analysis",
+        "ticker": "BBCA"
+      }
+    },
+    
+    "general_chat_response": {
+      "description": "Response for general chat messages",
+      "node_type": "Respond to Webhook",
+      "configuration": {
+        "response_mode": "responseNode",
+        "response_data": {
+          "message": "={{ $('AI Agent Img , Text').item.json.output }}",
+          "type": "text"
+        }
+      },
+      "example_output": {
+        "message": "Untuk investasi saham Indonesia, saya sarankan untuk memulai dengan blue chip stocks seperti BBCA, BMRI, dan TLKM. Diversifikasi portfolio dan lakukan riset fundamental sebelum berinvestasi.",
+        "type": "text"
+      }
+    },
+    
+    "crypto_response": {
+      "description": "Response for crypto-related queries",
+      "node_type": "Respond to Webhook",
+      "configuration": {
+        "response_mode": "responseNode",
+        "response_data": {
+          "message": "={{ $('AI Crypto').item.json.output }}",
+          "type": "crypto"
+        }
+      },
+      "example_output": {
+        "message": "Bitcoin saat ini diperdagangkan sekitar $43,000. Sentiment pasar cukup bullish dengan support kuat di level $40,000. Untuk trading, perhatikan resistance di $45,000.",
+        "type": "crypto"
+      }
+    },
+    
+    "image_generation_response": {
+      "description": "Response for image generation (#GAMBAR: messages)",
+      "node_type": "Respond to Webhook",
+      "configuration": {
+        "response_mode": "responseNode",
+        "response_data": {
+          "message": "Image has been generated successfully!",
+          "imageUrl": "={{ $('Execute Workflow').item.json.output.url }}",
+          "type": "generated_image"
+        }
+      },
+      "example_output": {
+        "message": "Image has been generated successfully!",
+        "imageUrl": "https://generated-image-url.com/image123.png",
+        "type": "generated_image"
+      }
+    },
+    
+    "error_response": {
+      "description": "Response for error cases (quota exceeded, etc.)",
+      "node_type": "Respond to Webhook",
+      "configuration": {
+        "response_mode": "responseNode",
+        "response_data": {
+          "error": "Kuota Habis",
+          "type": "error"
+        }
+      },
+      "example_output": {
+        "error": "Kuota Habis",
+        "type": "error"
+      }
+    },
+    
+    "multiple_responses": {
+      "description": "Multiple responses in one array (text + image)",
+      "node_type": "Respond to Webhook",
+      "configuration": {
+        "response_mode": "responseNode",
+        "response_data": [
+          {
+            "message": "={{ $('AI-chart').item.json.output }}",
+            "type": "text"
+          },
+          {
+            "imageUrl": "={{ $('Get Chart URL').item.json.url }}",
+            "type": "image"
+          }
+        ]
+      },
+      "example_output": [
+        {
+          "message": "Analisis teknikal untuk BBCA menunjukkan trend bullish...",
+          "type": "text"
+        },
+        {
+          "imageUrl": "https://chart-url.com/bbca-chart.png",
+          "type": "image"
+        }
+      ]
+    }
+  },
+  
+  "implementation_steps": {
+    "step_1": {
+      "title": "Add Webhook Trigger",
+      "description": "If not already present, add a Webhook node at the beginning",
+      "settings": {
+        "http_method": "POST",
+        "response_mode": "responseNode",
+        "path": "your-webhook-path"
+      }
+    },
+    
+    "step_2": {
+      "title": "Add Respond to Webhook Nodes",
+      "description": "Replace or add alongside existing WhatsApp response nodes",
+      "locations": [
+        "After AI-chart node (for stock analysis)",
+        "After AI Agent Img , Text node (for general chat)",
+        "After AI Crypto node (for crypto queries)",
+        "After Execute Workflow node (for image generation)",
+        "After error handling nodes"
+      ]
+    },
+    
+    "step_3": {
+      "title": "Configure Response Data",
+      "description": "Set up the JSON response format for each node",
+      "format": {
+        "message": "Text response from AI",
+        "imageUrl": "URL for images/charts (optional)",
+        "type": "Response type identifier",
+        "error": "Error message (for error responses)"
+      }
+    },
+    
+    "step_4": {
+      "title": "Test Integration",
+      "description": "Use test.html to verify responses",
+      "test_messages": [
+        "IDX:BBCA",
+        "What is Bitcoin?",
+        "#GAMBAR: sunset",
+        "How to invest in stocks?"
+      ]
+    }
+  },
+  
+  "node_configurations": {
+    "webhook_trigger": {
+      "node_type": "Webhook",
+      "settings": {
+        "httpMethod": "POST",
+        "path": "saham-bot-webhook",
+        "responseMode": "responseNode"
+      }
+    },
+    
+    "respond_to_webhook": {
+      "node_type": "Respond to Webhook",
+      "settings": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      }
+    }
+  },
+  
+  "troubleshooting": {
+    "no_response": {
+      "issue": "Chatbot shows 'Message received and processed' but no actual response",
+      "solution": "Add 'Respond to Webhook' nodes with proper JSON configuration"
+    },
+    
+    "empty_response": {
+      "issue": "Response is empty or undefined",
+      "solution": "Check node references in JSON (e.g., $('AI-chart').item.json.output)"
+    },
+    
+    "image_not_showing": {
+      "issue": "Images/charts not displaying in chat",
+      "solution": "Verify imageUrl is publicly accessible and CORS is configured"
+    },
+    
+    "json_error": {
+      "issue": "Invalid JSON response error",
+      "solution": "Validate JSON format and escape special characters"
+    }
+  }
+}
