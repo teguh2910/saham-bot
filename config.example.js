@@ -25,8 +25,6 @@ const CONFIG = {
             subtitle: 'I can help you with:',
             features: [
                 'Stock Analysis: Type "IDX:BBCA" for stock analysis',
-                'Image Generation: Type "#GAMBAR: your description"',
-                'Crypto Info: Ask about cryptocurrency',
                 'General Chat: Ask any questions about stocks',
                 'Image Analysis: Upload images for analysis'
             ]
