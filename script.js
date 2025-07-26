@@ -1001,7 +1001,6 @@ class SahamBot {
     showSettings() {
         // Load current settings into form
         document.getElementById('webhookUrl').value = this.settings.webhookUrl;
-        document.getElementById('ragWebhookUrl').value = this.settings.ragWebhookUrl;
         document.getElementById('sessionId').value = this.settings.sessionId;
         document.getElementById('userPhone').value = this.settings.userPhone;
         document.getElementById('imgbbApiKey').value = this.settings.imgbbApiKey;
