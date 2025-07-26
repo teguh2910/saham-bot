@@ -1107,6 +1107,13 @@ class SahamBot {
 
     hideRagModal() {
         document.getElementById('ragModal').style.display = 'none';
+        // Reset advanced options to collapsed state
+        const advancedOptions = document.getElementById('ragAdvancedOptions');
+        const toggle = document.querySelector('.advanced-toggle');
+        if (advancedOptions && toggle) {
+            advancedOptions.classList.remove('show');
+            toggle.classList.remove('active');
+        }
     }
 
     async performRagSearch() {
@@ -1329,50 +1336,20 @@ class SahamBot {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            // Check if response has content
-            const responseText = await response.text();
-            if (!responseText || responseText.trim() === '') {
-                // Empty response - no files
-                this.displayFilesList([]);
-                filesStats.textContent = '0 files • 0 B';
-                return;
-            }
-
-            // Try to parse JSON
-            let data;
-            try {
-                data = JSON.parse(responseText);
-            } catch (jsonError) {
-                console.error('JSON parse error:', jsonError, 'Response:', responseText);
-                throw new Error('Invalid JSON response from server');
-            }
-
-            // Handle the response
-            const files = data.files || [];
-            this.displayFilesList(files);
+            const data = await response.json();
+            this.displayFilesList(data.files || []);
 
             // Update stats
-            const totalFiles = files.length;
-            const totalSize = files.reduce((sum, file) => sum + (file.size || 0), 0);
+            const totalFiles = data.files ? data.files.length : 0;
+            const totalSize = data.files ? data.files.reduce((sum, file) => sum + (file.size || 0), 0) : 0;
             filesStats.textContent = `${totalFiles} files • ${this.formatFileSize(totalSize)}`;
 
         } catch (error) {
             console.error('Failed to load files:', error);
-
-            // Show appropriate error message
-            let errorMessage = 'Failed to load files';
-            if (error.message.includes('JSON')) {
-                errorMessage = 'Server returned invalid data';
-            } else if (error.message.includes('HTTP error')) {
-                errorMessage = 'Server connection failed';
-            } else {
-                errorMessage = error.message;
-            }
-
             filesList.innerHTML = `
                 <div class="empty-files">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>${errorMessage}</p>
+                    <p>Failed to load files: ${error.message}</p>
                     <button class="btn-primary" onclick="window.sahamBotInstance.loadFilesList()">Retry</button>
                 </div>
             `;
@@ -1666,6 +1643,17 @@ class SahamBot {
         // You could create a proper modal for this, but for now just show an alert
         // In a real implementation, you'd want a proper modal
         alert(`File Details:\n\nName: ${fileDetails.name}\nSize: ${this.formatFileSize(fileDetails.size || 0)}\nStatus: ${fileDetails.status || 'Unknown'}`);
+    }
+}
+
+// Toggle advanced options in RAG modal
+function toggleAdvancedOptions() {
+    const advancedOptions = document.getElementById('ragAdvancedOptions');
+    const toggle = document.querySelector('.advanced-toggle');
+
+    if (advancedOptions && toggle) {
+        advancedOptions.classList.toggle('show');
+        toggle.classList.toggle('active');
     }
 }
 

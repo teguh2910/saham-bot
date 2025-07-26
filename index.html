@@ -195,58 +195,102 @@
 
     <!-- RAG Search Modal -->
     <div class="modal" id="ragModal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>RAG Knowledge Search</h3>
+        <div class="modal-content rag-modal">
+            <div class="modal-header rag-header">
+                <div class="rag-header-content">
+                    <div class="rag-header-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="rag-header-text">
+                        <h3>AI Knowledge Search</h3>
+                        <p>Powered by RAG (Retrieval-Augmented Generation)</p>
+                    </div>
+                </div>
                 <button class="btn-close" id="closeRag">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="modal-body">
-                <div class="rag-info">
-                    <div class="info-icon">
-                        <i class="fas fa-search"></i>
+            <div class="modal-body rag-body">
+                <div class="rag-search-container">
+                    <!-- Search Input Section -->
+                    <div class="rag-search-section">
+                        <div class="search-input-wrapper">
+                            <div class="search-icon">
+                                <i class="fas fa-search"></i>
+                            </div>
+                            <textarea
+                                id="ragQuery"
+                                rows="3"
+                                placeholder="Ask me anything about your documents...
+For example: 'What are the key findings?' or 'Summarize the main points'"
+                                class="rag-search-input"
+                            ></textarea>
+                        </div>
+                        <div class="search-hint">
+                            <i class="fas fa-lightbulb"></i>
+                            <span>Tip: Be specific in your questions for better results</span>
+                        </div>
                     </div>
-                    <p>Search through your knowledge base using RAG (Retrieval-Augmented Generation)</p>
 
-                    <div class="rag-search-form">
-                        <div class="setting-group">
-                            <label for="ragQuery">Your Question:</label>
-                            <textarea id="ragQuery" rows="3" placeholder="Ask a question about your documents or knowledge base..."></textarea>
-                            <small>Enter your question to search through the RAG knowledge base</small>
+                    <!-- Advanced Options -->
+                    <div class="rag-advanced-section">
+                        <div class="advanced-toggle" onclick="toggleAdvancedOptions()">
+                            <i class="fas fa-cog"></i>
+                            <span>Advanced Options</span>
+                            <i class="fas fa-chevron-down toggle-icon"></i>
                         </div>
 
-                        <div class="rag-options">
-                            <div class="setting-group">
-                                <label for="ragMaxResults">Max Results:</label>
-                                <select id="ragMaxResults">
+                        <div class="rag-options" id="ragAdvancedOptions">
+                            <div class="option-card">
+                                <div class="option-header">
+                                    <i class="fas fa-list-ol"></i>
+                                    <label for="ragMaxResults">Results Count</label>
+                                </div>
+                                <select id="ragMaxResults" class="modern-select">
                                     <option value="3">3 results</option>
                                     <option value="5" selected>5 results</option>
                                     <option value="10">10 results</option>
+                                    <option value="15">15 results</option>
                                 </select>
                             </div>
 
-                            <div class="setting-group">
-                                <label for="ragSimilarityThreshold">Similarity Threshold:</label>
-                                <select id="ragSimilarityThreshold">
-                                    <option value="0.5">0.5 (Low)</option>
-                                    <option value="0.7" selected>0.7 (Medium)</option>
-                                    <option value="0.8">0.8 (High)</option>
-                                    <option value="0.9">0.9 (Very High)</option>
+                            <div class="option-card">
+                                <div class="option-header">
+                                    <i class="fas fa-crosshairs"></i>
+                                    <label for="ragSimilarityThreshold">Precision Level</label>
+                                </div>
+                                <select id="ragSimilarityThreshold" class="modern-select">
+                                    <option value="0.5">🎯 Broad Search (0.5)</option>
+                                    <option value="0.7" selected>⚖️ Balanced (0.7)</option>
+                                    <option value="0.8">🔍 Precise (0.8)</option>
+                                    <option value="0.9">🎯 Very Precise (0.9)</option>
                                 </select>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Status Section -->
                     <div class="rag-status" id="ragStatus" style="display: none;">
-                        <p>Searching knowledge base...</p>
+                        <div class="status-content">
+                            <div class="status-spinner">
+                                <i class="fas fa-brain fa-pulse"></i>
+                            </div>
+                            <div class="status-text">
+                                <h4>AI is thinking...</h4>
+                                <p>Searching through your knowledge base</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" id="cancelRag">Cancel</button>
-                <button class="btn-primary" id="searchRag">
-                    <i class="fas fa-search"></i> Search Knowledge Base
+            <div class="modal-footer rag-footer">
+                <button class="btn-secondary" id="cancelRag">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="btn-primary rag-search-btn" id="searchRag">
+                    <i class="fas fa-brain"></i>
+                    <span>Ask AI</span>
                 </button>
             </div>
         </div>
