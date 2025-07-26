@@ -1329,20 +1329,50 @@ class SahamBot {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const data = await response.json();
-            this.displayFilesList(data.files || []);
+            // Check if response has content
+            const responseText = await response.text();
+            if (!responseText || responseText.trim() === '') {
+                // Empty response - no files
+                this.displayFilesList([]);
+                filesStats.textContent = '0 files • 0 B';
+                return;
+            }
+
+            // Try to parse JSON
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (jsonError) {
+                console.error('JSON parse error:', jsonError, 'Response:', responseText);
+                throw new Error('Invalid JSON response from server');
+            }
+
+            // Handle the response
+            const files = data.files || [];
+            this.displayFilesList(files);
 
             // Update stats
-            const totalFiles = data.files ? data.files.length : 0;
-            const totalSize = data.files ? data.files.reduce((sum, file) => sum + (file.size || 0), 0) : 0;
+            const totalFiles = files.length;
+            const totalSize = files.reduce((sum, file) => sum + (file.size || 0), 0);
             filesStats.textContent = `${totalFiles} files • ${this.formatFileSize(totalSize)}`;
 
         } catch (error) {
             console.error('Failed to load files:', error);
+
+            // Show appropriate error message
+            let errorMessage = 'Failed to load files';
+            if (error.message.includes('JSON')) {
+                errorMessage = 'Server returned invalid data';
+            } else if (error.message.includes('HTTP error')) {
+                errorMessage = 'Server connection failed';
+            } else {
+                errorMessage = error.message;
+            }
+
             filesList.innerHTML = `
                 <div class="empty-files">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <p>Failed to load files: ${error.message}</p>
+                    <p>${errorMessage}</p>
                     <button class="btn-primary" onclick="window.sahamBotInstance.loadFilesList()">Retry</button>
                 </div>
             `;
