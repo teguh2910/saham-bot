@@ -367,16 +367,29 @@ class SahamBot {
         try {
             // Handle different response types from n8n workflow
             if (response && typeof response === 'object') {
+                // Handle binary file responses (base64 encoded)
+                if (response.binary || response.file || response.attachment) {
+                    await this.handleBinaryResponse(response);
+                    return;
+                }
+
                 // Handle text responses
                 if (response.message || response.text || response.output) {
                     const text = response.message || response.text || response.output;
                     this.addMessage(text, 'bot');
                 }
 
-                // Handle image/chart responses
+                // Handle image/chart responses (URL-based)
                 if (response.imageUrl || response.chartUrl || response.url) {
                     const imageUrl = response.imageUrl || response.chartUrl || response.url;
                     this.addImageMessage(imageUrl, 'bot');
+                }
+
+                // Handle file download responses
+                if (response.downloadUrl || response.fileUrl) {
+                    const fileUrl = response.downloadUrl || response.fileUrl;
+                    const fileName = response.fileName || response.filename || 'download';
+                    this.addFileMessage(fileUrl, fileName, 'bot');
                 }
 
                 // Handle multiple responses (array)
@@ -400,6 +413,14 @@ class SahamBot {
                     return;
                 }
 
+                // Handle combined text and file responses
+                if (response.text && (response.binary || response.file)) {
+                    this.addMessage(response.text, 'bot');
+                    await this.delay(300);
+                    await this.handleBinaryResponse(response);
+                    return;
+                }
+
             } else if (typeof response === 'string') {
                 // Handle plain string responses
                 this.addMessage(response, 'bot');
@@ -411,6 +432,71 @@ class SahamBot {
         } catch (error) {
             console.error('Error handling response:', error);
             this.showError('Error processing the response from the workflow.');
+        }
+    }
+
+    async handleBinaryResponse(response) {
+        try {
+            const binaryData = response.binary || response.file || response.attachment;
+            const mimeType = response.mimeType || response.contentType || 'application/octet-stream';
+            const fileName = response.fileName || response.filename || 'file';
+
+            // Handle base64 encoded binary data
+            if (typeof binaryData === 'string') {
+                // Create blob from base64 data
+                const byteCharacters = atob(binaryData);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: mimeType });
+
+                // Create object URL for the blob
+                const fileUrl = URL.createObjectURL(blob);
+
+                // Handle different file types
+                if (mimeType.startsWith('image/')) {
+                    this.addImageMessage(fileUrl, 'bot', fileName);
+                } else if (mimeType.startsWith('video/')) {
+                    this.addVideoMessage(fileUrl, 'bot', fileName);
+                } else if (mimeType.startsWith('audio/')) {
+                    this.addAudioMessage(fileUrl, 'bot', fileName);
+                } else {
+                    this.addFileMessage(fileUrl, fileName, 'bot', mimeType);
+                }
+            }
+            // Handle direct blob/buffer data
+            else if (binaryData instanceof ArrayBuffer || binaryData instanceof Uint8Array) {
+                const blob = new Blob([binaryData], { type: mimeType });
+                const fileUrl = URL.createObjectURL(blob);
+
+                if (mimeType.startsWith('image/')) {
+                    this.addImageMessage(fileUrl, 'bot', fileName);
+                } else if (mimeType.startsWith('video/')) {
+                    this.addVideoMessage(fileUrl, 'bot', fileName);
+                } else if (mimeType.startsWith('audio/')) {
+                    this.addAudioMessage(fileUrl, 'bot', fileName);
+                } else {
+                    this.addFileMessage(fileUrl, fileName, 'bot', mimeType);
+                }
+            }
+            // Handle URL-based binary responses
+            else if (typeof binaryData === 'object' && binaryData.url) {
+                if (mimeType.startsWith('image/')) {
+                    this.addImageMessage(binaryData.url, 'bot', fileName);
+                } else if (mimeType.startsWith('video/')) {
+                    this.addVideoMessage(binaryData.url, 'bot', fileName);
+                } else if (mimeType.startsWith('audio/')) {
+                    this.addAudioMessage(binaryData.url, 'bot', fileName);
+                } else {
+                    this.addFileMessage(binaryData.url, fileName, 'bot', mimeType);
+                }
+            }
+
+        } catch (error) {
+            console.error('Error handling binary response:', error);
+            this.addMessage('❌ Error processing file from server.', 'bot');
         }
     }
     
@@ -609,8 +695,135 @@ class SahamBot {
         this.saveChatMessage(text, sender, imageUrl, timestamp);
     }
     
-    addImageMessage(imageUrl, sender) {
+    addImageMessage(imageUrl, sender, fileName = null) {
         this.addMessage('', sender, imageUrl);
+    }
+
+    addVideoMessage(videoUrl, sender, fileName = 'video') {
+        const timestamp = new Date();
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}`;
+
+        const videoHtml = `
+            <div class="message-content">
+                <div class="file-attachment video-attachment">
+                    <div class="file-header">
+                        <i class="fas fa-video"></i>
+                        <span class="file-name">${fileName}</span>
+                        <a href="${videoUrl}" download="${fileName}" class="download-btn" title="Download">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                    <video controls class="video-preview">
+                        <source src="${videoUrl}" type="video/mp4">
+                        <source src="${videoUrl}" type="video/webm">
+                        <source src="${videoUrl}" type="video/ogg">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+                <div class="message-time">${timestamp.toLocaleTimeString()}</div>
+            </div>
+        `;
+
+        messageDiv.innerHTML = videoHtml;
+        this.messagesContainer.appendChild(messageDiv);
+        this.scrollToBottom();
+
+        // Save to chat history
+        this.saveChatMessage(`[Video: ${fileName}]`, sender, null, timestamp);
+    }
+
+    addAudioMessage(audioUrl, sender, fileName = 'audio') {
+        const timestamp = new Date();
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}`;
+
+        const audioHtml = `
+            <div class="message-content">
+                <div class="file-attachment audio-attachment">
+                    <div class="file-header">
+                        <i class="fas fa-music"></i>
+                        <span class="file-name">${fileName}</span>
+                        <a href="${audioUrl}" download="${fileName}" class="download-btn" title="Download">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                    <audio controls class="audio-preview">
+                        <source src="${audioUrl}" type="audio/mpeg">
+                        <source src="${audioUrl}" type="audio/wav">
+                        <source src="${audioUrl}" type="audio/ogg">
+                        Your browser does not support the audio tag.
+                    </audio>
+                </div>
+                <div class="message-time">${timestamp.toLocaleTimeString()}</div>
+            </div>
+        `;
+
+        messageDiv.innerHTML = audioHtml;
+        this.messagesContainer.appendChild(messageDiv);
+        this.scrollToBottom();
+
+        // Save to chat history
+        this.saveChatMessage(`[Audio: ${fileName}]`, sender, null, timestamp);
+    }
+
+    addFileMessage(fileUrl, fileName, sender, mimeType = 'application/octet-stream') {
+        const timestamp = new Date();
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}`;
+
+        // Get file icon based on mime type or extension
+        const fileIcon = this.getFileIcon(fileName, mimeType);
+        const fileSize = this.getFileSizeFromUrl(fileUrl);
+
+        const fileHtml = `
+            <div class="message-content">
+                <div class="file-attachment document-attachment">
+                    <div class="file-header">
+                        <i class="${fileIcon}"></i>
+                        <div class="file-info">
+                            <span class="file-name">${fileName}</span>
+                            <span class="file-size">${fileSize}</span>
+                        </div>
+                        <a href="${fileUrl}" download="${fileName}" class="download-btn" title="Download">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                    <div class="file-preview">
+                        <p>Click download to save this file</p>
+                    </div>
+                </div>
+                <div class="message-time">${timestamp.toLocaleTimeString()}</div>
+            </div>
+        `;
+
+        messageDiv.innerHTML = fileHtml;
+        this.messagesContainer.appendChild(messageDiv);
+        this.scrollToBottom();
+
+        // Save to chat history
+        this.saveChatMessage(`[File: ${fileName}]`, sender, null, timestamp);
+    }
+
+    getFileIcon(fileName, mimeType) {
+        const extension = fileName.split('.').pop()?.toLowerCase();
+
+        if (mimeType.startsWith('image/')) return 'fas fa-image';
+        if (mimeType.startsWith('video/')) return 'fas fa-video';
+        if (mimeType.startsWith('audio/')) return 'fas fa-music';
+        if (mimeType.includes('pdf')) return 'fas fa-file-pdf';
+        if (mimeType.includes('word') || extension === 'doc' || extension === 'docx') return 'fas fa-file-word';
+        if (mimeType.includes('excel') || extension === 'xls' || extension === 'xlsx') return 'fas fa-file-excel';
+        if (mimeType.includes('powerpoint') || extension === 'ppt' || extension === 'pptx') return 'fas fa-file-powerpoint';
+        if (mimeType.includes('zip') || mimeType.includes('rar') || extension === 'zip' || extension === 'rar') return 'fas fa-file-archive';
+        if (mimeType.includes('text') || extension === 'txt') return 'fas fa-file-alt';
+
+        return 'fas fa-file';
+    }
+
+    getFileSizeFromUrl(url) {
+        // This is a placeholder - in real implementation you might want to fetch file size
+        return 'Unknown size';
     }
     
     showTyping() {

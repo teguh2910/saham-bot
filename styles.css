@@ -1267,3 +1267,154 @@ body {
 .history-sessions::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.3);
 }
+
+/* File Attachment Styles for Chat Messages */
+.file-attachment {
+    background: #f8f9fa;
+    border: 1px solid #e9edef;
+    border-radius: 12px;
+    padding: 12px;
+    margin: 8px 0;
+    max-width: 350px;
+    transition: all 0.3s ease;
+}
+
+.file-attachment:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.file-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.file-header i {
+    font-size: 18px;
+    color: #667eea;
+    width: 20px;
+    text-align: center;
+}
+
+.file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-name {
+    font-weight: 600;
+    color: #111b21;
+    font-size: 14px;
+    margin: 0;
+    word-break: break-word;
+}
+
+.file-size {
+    font-size: 12px;
+    color: #54656f;
+    margin: 2px 0 0 0;
+}
+
+.download-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    font-size: 12px;
+}
+
+.download-btn:hover {
+    background: #5a6fd8;
+    transform: scale(1.1);
+    color: white;
+    text-decoration: none;
+}
+
+/* Video Attachment Styles */
+.video-attachment .video-preview {
+    width: 100%;
+    max-width: 300px;
+    border-radius: 8px;
+    background: #000;
+}
+
+.video-attachment .file-header i {
+    color: #dc3545;
+}
+
+/* Audio Attachment Styles */
+.audio-attachment .audio-preview {
+    width: 100%;
+    max-width: 300px;
+    height: 40px;
+}
+
+.audio-attachment .file-header i {
+    color: #28a745;
+}
+
+/* Document Attachment Styles */
+.document-attachment {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.document-attachment .file-header i {
+    color: #6c757d;
+}
+
+.document-attachment .file-preview {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 6px;
+    padding: 8px;
+    text-align: center;
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 8px;
+}
+
+/* File Type Specific Colors */
+.file-attachment .fa-file-pdf { color: #dc3545; }
+.file-attachment .fa-file-word { color: #0d6efd; }
+.file-attachment .fa-file-excel { color: #198754; }
+.file-attachment .fa-file-powerpoint { color: #fd7e14; }
+.file-attachment .fa-file-archive { color: #6f42c1; }
+.file-attachment .fa-file-alt { color: #6c757d; }
+.file-attachment .fa-image { color: #20c997; }
+.file-attachment .fa-video { color: #dc3545; }
+.file-attachment .fa-music { color: #28a745; }
+
+/* Responsive File Attachments */
+@media (max-width: 768px) {
+    .file-attachment {
+        max-width: 280px;
+        padding: 10px;
+    }
+
+    .file-header {
+        gap: 8px;
+    }
+
+    .file-name {
+        font-size: 13px;
+    }
+
+    .download-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+    }
+
+    .video-attachment .video-preview,
+    .audio-attachment .audio-preview {
+        max-width: 250px;
+    }
+}
