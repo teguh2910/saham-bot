@@ -178,9 +178,20 @@ class SahamBot {
         });
 
         // Clear chat
-        document.getElementById('clearChat').addEventListener('click', () => {
-            this.clearChat();
-        });
+        const clearChatEl = document.getElementById('clearChat');
+        if (clearChatEl) {
+            clearChatEl.addEventListener('click', () => {
+                this.clearChat();
+            });
+        }
+
+        // Test image responses
+        const testImageBtnEl = document.getElementById('testImageBtn');
+        if (testImageBtnEl) {
+            testImageBtnEl.addEventListener('click', () => {
+                this.testImageResponse();
+            });
+        }
         
         // Close modal on backdrop click
         this.settingsModal.addEventListener('click', (e) => {
@@ -365,10 +376,14 @@ class SahamBot {
         await this.delay(1000 + Math.random() * 2000);
 
         try {
+            // Debug: Log the response to console for troubleshooting
+            console.log('🔍 n8n Response received:', response);
+
             // Handle different response types from n8n workflow
             if (response && typeof response === 'object') {
                 // Handle binary file responses (base64 encoded)
                 if (response.binary || response.file || response.attachment) {
+                    console.log('📁 Processing binary response');
                     await this.handleBinaryResponse(response);
                     return;
                 }
@@ -376,12 +391,14 @@ class SahamBot {
                 // Handle text responses
                 if (response.message || response.text || response.output) {
                     const text = response.message || response.text || response.output;
+                    console.log('💬 Adding text message:', text.substring(0, 100) + '...');
                     this.addMessage(text, 'bot');
                 }
 
-                // Handle image/chart responses (URL-based)
-                if (response.imageUrl || response.chartUrl || response.url) {
-                    const imageUrl = response.imageUrl || response.chartUrl || response.url;
+                // Enhanced image detection - check multiple possible field names
+                const imageUrl = this.extractImageUrl(response);
+                if (imageUrl) {
+                    console.log('🖼️ Found image URL:', imageUrl);
                     this.addImageMessage(imageUrl, 'bot');
                 }
 
@@ -389,15 +406,36 @@ class SahamBot {
                 if (response.downloadUrl || response.fileUrl) {
                     const fileUrl = response.downloadUrl || response.fileUrl;
                     const fileName = response.fileName || response.filename || 'download';
+                    console.log('📄 Adding file download:', fileName);
                     this.addFileMessage(fileUrl, fileName, 'bot');
                 }
 
                 // Handle multiple responses (array)
                 if (Array.isArray(response)) {
+                    console.log('📋 Processing array response with', response.length, 'items');
                     for (const item of response) {
                         await this.handleResponse(item);
                         await this.delay(500); // Small delay between multiple responses
                     }
+                    return;
+                }
+
+                // Check if response has no recognized fields but might contain image data
+                if (!response.message && !response.text && !response.output &&
+                    !response.binary && !response.file && !response.attachment &&
+                    !response.downloadUrl && !response.fileUrl) {
+
+                    // Try to extract image from any field
+                    const imageUrl = this.extractImageUrl(response);
+                    if (imageUrl) {
+                        console.log('🖼️ Found image in unstructured response:', imageUrl);
+                        this.addImageMessage(imageUrl, 'bot');
+                        return;
+                    }
+
+                    // If no image found, show the raw response as text
+                    console.log('❓ Unrecognized response format, showing as text');
+                    this.addMessage(JSON.stringify(response, null, 2), 'bot');
                     return;
                 }
 
@@ -433,6 +471,97 @@ class SahamBot {
             console.error('Error handling response:', error);
             this.showError('Error processing the response from the workflow.');
         }
+    }
+
+    extractImageUrl(response) {
+        // Check for various possible image URL field names
+        const possibleImageFields = [
+            'imageUrl', 'image_url', 'image', 'chartUrl', 'chart_url', 'chart',
+            'url', 'link', 'src', 'href', 'path', 'file_url', 'fileUrl',
+            'attachment_url', 'attachmentUrl', 'media_url', 'mediaUrl',
+            'picture', 'photo', 'img', 'graphic', 'visualization'
+        ];
+
+        for (const field of possibleImageFields) {
+            if (response[field]) {
+                const url = response[field];
+                // Check if it's a valid URL or base64 image
+                if (typeof url === 'string' && (
+                    url.startsWith('http') ||
+                    url.startsWith('https') ||
+                    url.startsWith('data:image/') ||
+                    url.startsWith('blob:')
+                )) {
+                    return url;
+                }
+            }
+        }
+
+        // Check nested objects for image URLs
+        if (response.data && typeof response.data === 'object') {
+            return this.extractImageUrl(response.data);
+        }
+
+        if (response.result && typeof response.result === 'object') {
+            return this.extractImageUrl(response.result);
+        }
+
+        if (response.output && typeof response.output === 'object') {
+            return this.extractImageUrl(response.output);
+        }
+
+        // Check if any field contains what looks like an image URL
+        for (const [key, value] of Object.entries(response)) {
+            if (typeof value === 'string' && (
+                value.includes('.jpg') || value.includes('.jpeg') ||
+                value.includes('.png') || value.includes('.gif') ||
+                value.includes('.webp') || value.includes('.svg') ||
+                value.startsWith('data:image/') || value.startsWith('blob:')
+            )) {
+                return value;
+            }
+        }
+
+        return null;
+    }
+
+    // Test method to simulate different response formats (for debugging)
+    testImageResponse() {
+        console.log('🧪 Testing different image response formats...');
+
+        // Test 1: Standard imageUrl format
+        this.handleResponse({
+            message: "Here's your chart:",
+            imageUrl: "https://via.placeholder.com/400x300/667eea/ffffff?text=Test+Chart+1"
+        });
+
+        setTimeout(() => {
+            // Test 2: Alternative field names
+            this.handleResponse({
+                text: "Alternative format:",
+                image: "https://via.placeholder.com/400x300/28a745/ffffff?text=Test+Chart+2"
+            });
+        }, 2000);
+
+        setTimeout(() => {
+            // Test 3: Nested response
+            this.handleResponse({
+                data: {
+                    chart_url: "https://via.placeholder.com/400x300/dc3545/ffffff?text=Test+Chart+3"
+                },
+                message: "Nested format:"
+            });
+        }, 4000);
+
+        setTimeout(() => {
+            // Test 4: Base64 image
+            this.handleResponse({
+                text: "Base64 format:",
+                binary: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                mimeType: "image/png",
+                fileName: "test.png"
+            });
+        }, 6000);
     }
 
     async handleBinaryResponse(response) {
