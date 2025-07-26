@@ -253,117 +253,9 @@ body {
     color: #0c5460;
 }
 
-.message-bubble .stock-analysis {
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 12px;
-    padding: 16px;
-    margin: 12px 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+/* Removed complex stock analysis styling - keeping simple text format */
 
-.message-bubble .stock-analysis .stock-name {
-    font-size: 18px;
-    font-weight: 700;
-    color: #25D366;
-    margin-bottom: 12px;
-    text-align: center;
-    padding: 8px;
-    background: white;
-    border-radius: 8px;
-    border: 2px solid #25D366;
-}
-
-.message-bubble .trading-levels {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin: 12px 0;
-    background: #f8f9fa;
-    padding: 12px;
-    border-radius: 8px;
-}
-
-.message-bubble .trading-level {
-    background: white;
-    padding: 10px 12px;
-    border-radius: 6px;
-    border-left: 4px solid #25D366;
-    font-size: 14px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-.message-bubble .trading-level .label {
-    font-weight: 600;
-    color: #128C7E;
-    font-size: 12px;
-    margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.message-bubble .trading-level .value {
-    font-weight: 700;
-    color: #111b21;
-    font-size: 16px;
-}
-
-.message-bubble .trading-level.buy {
-    border-left-color: #28a745;
-}
-
-.message-bubble .trading-level.buy .label {
-    color: #28a745;
-}
-
-.message-bubble .trading-level.target {
-    border-left-color: #17a2b8;
-}
-
-.message-bubble .trading-level.target .label {
-    color: #17a2b8;
-}
-
-.message-bubble .trading-level.stop {
-    border-left-color: #dc3545;
-}
-
-.message-bubble .trading-level.stop .label {
-    color: #dc3545;
-}
-
-.message-bubble .reason-section {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid #e9ecef;
-}
-
-.message-bubble .reason-section h4 {
-    color: #25D366;
-    margin-bottom: 8px;
-}
-
-.message-bubble code {
-    background: #f1f3f4;
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-    color: #d73a49;
-}
-
-.message-bubble blockquote {
-    border-left: 4px solid #25D366;
-    margin: 8px 0;
-    padding: 8px 12px;
-    background: #f8f9fa;
-    font-style: italic;
-    color: #54656f;
-}
+/* Simplified formatting - keeping only basic text styling */
 
 .message-time {
     font-size: 11px;
@@ -765,6 +657,15 @@ body {
         margin: 20px;
     }
 
+    .rag-options {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .rag-search-form {
+        max-width: 100%;
+    }
+
     .message-bubble {
         max-width: 85%;
     }
@@ -790,32 +691,7 @@ body {
         padding: 10px 14px;
     }
 
-    .message-bubble .trading-levels {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        padding: 8px;
-    }
-
-    .message-bubble .trading-level {
-        padding: 8px 10px;
-        font-size: 13px;
-    }
-
-    .message-bubble .trading-level .label {
-        font-size: 11px;
-    }
-
-    .message-bubble .trading-level .value {
-        font-size: 14px;
-    }
-
-    .message-bubble .stock-analysis {
-        padding: 8px;
-    }
-
-    .message-bubble .stock-name {
-        font-size: 14px;
-    }
+    /* Removed complex trading level styling */
 
     .message-bubble h1 { font-size: 16px; }
     .message-bubble h2 { font-size: 15px; }
@@ -893,6 +769,99 @@ body {
 .new-chat-info strong {
     color: #25D366;
     font-weight: 600;
+}
+
+/* RAG Modal Styles */
+.rag-info {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.rag-info .info-icon {
+    font-size: 48px;
+    color: #17a2b8;
+    margin-bottom: 20px;
+}
+
+.rag-info p {
+    margin: 15px 0;
+    color: #111b21;
+    line-height: 1.5;
+}
+
+.rag-search-form {
+    text-align: left;
+    max-width: 500px;
+    margin: 20px auto;
+}
+
+.rag-search-form textarea {
+    width: 100%;
+    min-height: 80px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.rag-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.rag-options select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.rag-status {
+    background: #e3f2fd;
+    border: 1px solid #17a2b8;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 20px 0;
+    color: #0c5460;
+}
+
+.rag-status p {
+    margin: 0;
+    font-weight: 500;
+}
+
+.rag-results {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-top: 15px;
+}
+
+.rag-result-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.rag-result-item .result-title {
+    font-weight: 600;
+    color: #111b21;
+    margin-bottom: 5px;
+}
+
+.rag-result-item .result-content {
+    color: #54656f;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.rag-result-item .result-score {
+    font-size: 12px;
+    color: #17a2b8;
+    margin-top: 5px;
+    font-weight: 500;
 }
 
 /* Chat History Styles */

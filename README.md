@@ -8,6 +8,7 @@ A frontend web application that replaces WhatsApp as the input/output channel fo
 - **Stock Analysis**: Type `IDX:BBCA` for stock chart analysis
 - **General Chat**: AI-powered stock market discussions
 - **Image Analysis**: Upload images for AI analysis
+- **RAG Knowledge Search**: Search through document knowledge base
 - **Chat History**: Automatic saving and restoration of conversations
 - **Session Management**: Multiple chat sessions with easy switching
 - **Real-time Typing Indicators**: Natural conversation flow
@@ -107,6 +108,15 @@ https://your-n8n-instance.com/webhook/your-webhook-id
 - AI analyzes the image content
 - Supports JPEG, PNG, and other common formats
 - Images automatically uploaded to hosting services
+
+### RAG Knowledge Search
+- **Document Search**: Click the search button (🔍) to access RAG functionality
+- **Knowledge Base Query**: Search through your uploaded documents and knowledge base
+- **Similarity Matching**: Configurable similarity thresholds for relevant results
+- **Multiple Results**: Get multiple relevant documents for comprehensive answers
+- **Interactive Results**: Click on results to use them in your chat
+- **Smart Integration**: Combine search results with AI responses
+- **Separate Webhook**: Uses dedicated RAG webhook URL for knowledge retrieval
 
 ### Chat History & Session Management
 - **New Chat Sessions**: Click the plus button (➕) to start fresh conversations

@@ -22,6 +22,9 @@
                 </div>
             </div>
             <div class="header-actions">
+                <button class="btn-icon" id="ragBtn" title="RAG Knowledge Search">
+                    <i class="fas fa-search"></i>
+                </button>
                 <button class="btn-icon" id="newChatBtn" title="New Chat Session">
                     <i class="fas fa-plus"></i>
                 </button>
@@ -92,6 +95,11 @@
                     <label for="webhookUrl">n8n Webhook URL:</label>
                     <input type="url" id="webhookUrl" placeholder="https://worker1.servercikarang.cloud/webhook/teguh">
                     <small>Enter your n8n webhook URL to connect to your workflow</small>
+                </div>
+                <div class="setting-group">
+                    <label for="ragWebhookUrl">RAG Webhook URL:</label>
+                    <input type="url" id="ragWebhookUrl" placeholder="https://your-rag-endpoint.com/webhook/rag">
+                    <small>Enter your RAG (Retrieval-Augmented Generation) webhook URL for knowledge base search</small>
                 </div>
                 <div class="setting-group">
                     <label for="sessionId">Session ID:</label>
@@ -177,6 +185,65 @@
                 <button class="btn-secondary" id="cancelNewChat">Cancel</button>
                 <button class="btn-primary" id="confirmNewChat">
                     <i class="fas fa-plus"></i> Start New Chat
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RAG Search Modal -->
+    <div class="modal" id="ragModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>RAG Knowledge Search</h3>
+                <button class="btn-close" id="closeRag">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="rag-info">
+                    <div class="info-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <p>Search through your knowledge base using RAG (Retrieval-Augmented Generation)</p>
+
+                    <div class="rag-search-form">
+                        <div class="setting-group">
+                            <label for="ragQuery">Your Question:</label>
+                            <textarea id="ragQuery" rows="3" placeholder="Ask a question about your documents or knowledge base..."></textarea>
+                            <small>Enter your question to search through the RAG knowledge base</small>
+                        </div>
+
+                        <div class="rag-options">
+                            <div class="setting-group">
+                                <label for="ragMaxResults">Max Results:</label>
+                                <select id="ragMaxResults">
+                                    <option value="3">3 results</option>
+                                    <option value="5" selected>5 results</option>
+                                    <option value="10">10 results</option>
+                                </select>
+                            </div>
+
+                            <div class="setting-group">
+                                <label for="ragSimilarityThreshold">Similarity Threshold:</label>
+                                <select id="ragSimilarityThreshold">
+                                    <option value="0.5">0.5 (Low)</option>
+                                    <option value="0.7" selected>0.7 (Medium)</option>
+                                    <option value="0.8">0.8 (High)</option>
+                                    <option value="0.9">0.9 (Very High)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rag-status" id="ragStatus" style="display: none;">
+                        <p>Searching knowledge base...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelRag">Cancel</button>
+                <button class="btn-primary" id="searchRag">
+                    <i class="fas fa-search"></i> Search Knowledge Base
                 </button>
             </div>
         </div>

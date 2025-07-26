@@ -12,6 +12,7 @@ class SahamBot {
         // Settings
         this.settings = {
             webhookUrl: localStorage.getItem('webhookUrl') || 'https://worker1.servercikarang.cloud/webhook/teguh',
+            ragWebhookUrl: localStorage.getItem('ragWebhookUrl') || '',
             sessionId: localStorage.getItem('sessionId') || this.generateSessionId(),
             userPhone: localStorage.getItem('userPhone') || '6281234567890',
             imgbbApiKey: localStorage.getItem('imgbbApiKey') || ''
@@ -102,6 +103,30 @@ class SahamBot {
         document.getElementById('confirmNewChat').addEventListener('click', () => {
             this.startNewChatSession();
         });
+
+        // RAG modal
+        document.getElementById('ragBtn').addEventListener('click', () => {
+            this.showRagModal();
+        });
+
+        document.getElementById('closeRag').addEventListener('click', () => {
+            this.hideRagModal();
+        });
+
+        document.getElementById('cancelRag').addEventListener('click', () => {
+            this.hideRagModal();
+        });
+
+        document.getElementById('searchRag').addEventListener('click', () => {
+            this.performRagSearch();
+        });
+
+        // RAG query enter key
+        document.getElementById('ragQuery').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                this.performRagSearch();
+            }
+        });
         
         // New chat session
         document.getElementById('newChatBtn').addEventListener('click', () => {
@@ -129,6 +154,12 @@ class SahamBot {
         document.getElementById('newChatModal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('newChatModal')) {
                 this.hideNewChatModal();
+            }
+        });
+
+        document.getElementById('ragModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('ragModal')) {
+                this.hideRagModal();
             }
         });
     }
@@ -575,6 +606,7 @@ class SahamBot {
     showSettings() {
         // Load current settings into form
         document.getElementById('webhookUrl').value = this.settings.webhookUrl;
+        document.getElementById('ragWebhookUrl').value = this.settings.ragWebhookUrl;
         document.getElementById('sessionId').value = this.settings.sessionId;
         document.getElementById('userPhone').value = this.settings.userPhone;
         document.getElementById('imgbbApiKey').value = this.settings.imgbbApiKey;
@@ -589,18 +621,25 @@ class SahamBot {
     saveSettings() {
         // Get values from form
         this.settings.webhookUrl = document.getElementById('webhookUrl').value.trim();
+        this.settings.ragWebhookUrl = document.getElementById('ragWebhookUrl').value.trim();
         this.settings.sessionId = document.getElementById('sessionId').value.trim() || this.generateSessionId();
         this.settings.userPhone = document.getElementById('userPhone').value.trim();
         this.settings.imgbbApiKey = document.getElementById('imgbbApiKey').value.trim();
 
-        // Validate webhook URL
+        // Validate webhook URLs
         if (this.settings.webhookUrl && !this.isValidUrl(this.settings.webhookUrl)) {
-            this.showError('Please enter a valid webhook URL.');
+            this.showError('Please enter a valid main webhook URL.');
+            return;
+        }
+
+        if (this.settings.ragWebhookUrl && !this.isValidUrl(this.settings.ragWebhookUrl)) {
+            this.showError('Please enter a valid RAG webhook URL.');
             return;
         }
 
         // Save to localStorage
         localStorage.setItem('webhookUrl', this.settings.webhookUrl);
+        localStorage.setItem('ragWebhookUrl', this.settings.ragWebhookUrl);
         localStorage.setItem('sessionId', this.settings.sessionId);
         localStorage.setItem('userPhone', this.settings.userPhone);
         localStorage.setItem('imgbbApiKey', this.settings.imgbbApiKey);
@@ -1001,233 +1040,213 @@ class SahamBot {
         }
     }
 
+    showRagModal() {
+        if (!this.settings.ragWebhookUrl) {
+            this.showError('Please configure your RAG webhook URL in settings first.');
+            this.showSettings();
+            return;
+        }
+
+        // Clear previous search
+        document.getElementById('ragQuery').value = '';
+        document.getElementById('ragStatus').style.display = 'none';
+
+        // Remove any previous results
+        const existingResults = document.querySelector('.rag-results');
+        if (existingResults) {
+            existingResults.remove();
+        }
+
+        document.getElementById('ragModal').style.display = 'flex';
+        document.getElementById('ragQuery').focus();
+    }
+
+    hideRagModal() {
+        document.getElementById('ragModal').style.display = 'none';
+    }
+
+    async performRagSearch() {
+        const query = document.getElementById('ragQuery').value.trim();
+        const maxResults = document.getElementById('ragMaxResults').value;
+        const similarityThreshold = document.getElementById('ragSimilarityThreshold').value;
+
+        if (!query) {
+            this.showError('Please enter a question to search.');
+            return;
+        }
+
+        if (!this.settings.ragWebhookUrl) {
+            this.showError('RAG webhook URL not configured. Please check settings.');
+            return;
+        }
+
+        // Show loading status
+        const statusDiv = document.getElementById('ragStatus');
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Searching knowledge base...</p>';
+
+        // Disable search button
+        const searchBtn = document.getElementById('searchRag');
+        searchBtn.disabled = true;
+
+        try {
+            // Prepare RAG payload
+            const payload = {
+                query: query,
+                maxResults: parseInt(maxResults),
+                similarityThreshold: parseFloat(similarityThreshold),
+                sessionId: this.settings.sessionId,
+                timestamp: new Date().toISOString()
+            };
+
+            // Send to RAG webhook
+            const response = await fetch(this.settings.ragWebhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const results = await response.json();
+
+            // Display results
+            this.displayRagResults(results, query);
+
+        } catch (error) {
+            console.error('RAG search error:', error);
+            statusDiv.innerHTML = `<p style="color: #dc3545;"><i class="fas fa-exclamation-triangle"></i> Search failed: ${error.message}</p>`;
+        } finally {
+            searchBtn.disabled = false;
+        }
+    }
+
     formatBotMessage(text) {
-        // Enhanced formatting for bot messages
+        // Simple formatting for bot messages - keep it clean and readable
         let formatted = text;
 
-        // Detect and format stock analysis
-        if (this.isStockAnalysis(text)) {
-            return this.formatStockAnalysis(text);
-        }
-
-        // General formatting improvements
-        formatted = this.applyGeneralFormatting(formatted);
+        // Apply basic formatting without complex layouts
+        formatted = this.applySimpleFormatting(formatted);
 
         return formatted;
     }
 
-    isStockAnalysis(text) {
-        // Check if message contains stock analysis patterns
-        const stockPatterns = [
-            /\*\*Nama Saham:/i,
-            /\*\*BUY:/i,
-            /\*\*TP1:/i,
-            /\*\*TP2:/i,
-            /\*\*CL:/i,
-            /IDX:[A-Z]+/i
-        ];
-
-        return stockPatterns.some(pattern => pattern.test(text));
-    }
-
-    formatStockAnalysis(text) {
-        // Extract stock information with more flexible patterns
-        const stockMatch = text.match(/\*\*Nama Saham:\s*(.*?)\*\*/i) || text.match(/IDX:([A-Z]+)/i);
-        const buyMatch = text.match(/\*\*BUY:\s*(.*?)\*\*/i);
-        const tp1Match = text.match(/\*\*TP1:\s*(.*?)\*\*/i);
-        const tp2Match = text.match(/\*\*TP2:\s*(.*?)\*\*/i);
-        const clMatch = text.match(/\*\*CL:\s*(.*?)\*\*/i);
-
+    applySimpleFormatting(text) {
         let formatted = text;
 
-        // Clean up the original text first
-        formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-        // Create structured stock analysis layout
-        if (stockMatch || buyMatch) {
-            let stockAnalysisHtml = '<div class="stock-analysis">';
-
-            if (stockMatch) {
-                const stockName = stockMatch[1] ? stockMatch[1].trim() : stockMatch[0];
-                stockAnalysisHtml += `<div class="stock-name">📈 ${stockName}</div>`;
-            }
-
-            if (buyMatch || tp1Match || tp2Match || clMatch) {
-                stockAnalysisHtml += '<div class="trading-levels">';
-
-                if (buyMatch) {
-                    stockAnalysisHtml += `
-                        <div class="trading-level buy">
-                            <div class="label">🟢 BUY</div>
-                            <div class="value">${buyMatch[1].trim()}</div>
-                        </div>
-                    `;
-                }
-
-                if (tp1Match) {
-                    stockAnalysisHtml += `
-                        <div class="trading-level target">
-                            <div class="label">🎯 TP1</div>
-                            <div class="value">${tp1Match[1].trim()}</div>
-                        </div>
-                    `;
-                }
-
-                if (tp2Match) {
-                    stockAnalysisHtml += `
-                        <div class="trading-level target">
-                            <div class="label">🎯 TP2</div>
-                            <div class="value">${tp2Match[1].trim()}</div>
-                        </div>
-                    `;
-                }
-
-                if (clMatch) {
-                    stockAnalysisHtml += `
-                        <div class="trading-level stop">
-                            <div class="label">🛑 CL</div>
-                            <div class="value">${clMatch[1].trim()}</div>
-                        </div>
-                    `;
-                }
-
-                stockAnalysisHtml += '</div>';
-            }
-
-            stockAnalysisHtml += '</div>';
-
-            // Replace the stock info section with formatted version
-            // Try multiple patterns to catch different formats
-            let replaced = false;
-
-            // Pattern 1: Full stock analysis block
-            if (formatted.match(/\*\*Nama Saham:.*?\*\*CL:.*?\*\*/is)) {
-                formatted = formatted.replace(/\*\*Nama Saham:.*?\*\*CL:.*?\*\*/is, stockAnalysisHtml);
-                replaced = true;
-            }
-            // Pattern 2: Just the trading levels
-            else if (formatted.match(/\*\*BUY:.*?\*\*CL:.*?\*\*/is)) {
-                formatted = formatted.replace(/\*\*BUY:.*?\*\*CL:.*?\*\*/is, stockAnalysisHtml);
-                replaced = true;
-            }
-
-            // If no replacement was made, prepend the analysis
-            if (!replaced) {
-                formatted = stockAnalysisHtml + '<br><br>' + formatted;
-            }
-        }
-
-        // Format the reason section
-        const reasonMatch = text.match(/\*\*Alasan:\*\*(.*)/is);
-        if (reasonMatch) {
-            const reasonText = reasonMatch[1].trim();
-            const reasonHtml = `
-                <div class="reason-section">
-                    <h4>📊 Analisis Teknikal</h4>
-                    ${this.formatReasonText(reasonText)}
-                </div>
-            `;
-            formatted = formatted.replace(/\*\*Alasan:\*\*.*$/is, reasonHtml);
-        }
-
-        return this.applyGeneralFormatting(formatted);
-    }
-
-    formatReasonText(text) {
-        let formatted = text;
-
-        // Format numbered points
-        formatted = formatted.replace(/(\d+\.\s*\*\*[^*]+\*\*:)/g, '<p><strong>$1</strong></p>');
-
-        // Format bold text
-        formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-        // Format italic text
-        formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-
-        // Format technical terms
-        const technicalTerms = [
-            'Bullish Divergence', 'MACD', 'RSI', 'Support', 'Resistance',
-            'Breakout', 'Volume', 'Moving Average', 'Fibonacci', 'Candlestick'
-        ];
-
-        technicalTerms.forEach(term => {
-            const regex = new RegExp(`\\b(${term})\\b`, 'gi');
-            formatted = formatted.replace(regex, '<span class="highlight">$1</span>');
-        });
-
-        // Format price levels
-        formatted = formatted.replace(/(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/g, '<code>$1</code>');
-
-        // Convert line breaks to paragraphs
-        formatted = formatted.split('\n').filter(line => line.trim()).map(line => `<p>${line.trim()}</p>`).join('');
-
-        return formatted;
-    }
-
-    applyGeneralFormatting(text) {
-        let formatted = text;
-
-        // Format headers (markdown-style)
-        formatted = formatted.replace(/^### (.*$)/gm, '<h3>$1</h3>');
-        formatted = formatted.replace(/^## (.*$)/gm, '<h2>$1</h2>');
-        formatted = formatted.replace(/^# (.*$)/gm, '<h1>$1</h1>');
-
-        // Format bold text that wasn't caught before
-        formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-
-        // Format italic text
-        formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-
-        // Format code blocks
-        formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-        // Format line breaks
-        formatted = formatted.replace(/\n\n/g, '</p><p>');
+        // Convert line breaks to HTML breaks for proper display
         formatted = formatted.replace(/\n/g, '<br>');
 
-        // Wrap in paragraph if not already wrapped
-        if (!formatted.includes('<p>') && !formatted.includes('<div>') && !formatted.includes('<h')) {
-            formatted = `<p>${formatted}</p>`;
-        }
+        // Format bold text (keep **text** as bold)
+        formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
-        // Add emoji for better visual appeal
-        formatted = this.addContextualEmojis(formatted);
+        // Format italic text (keep *text* as italic)
+        formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
 
+        // Keep the text clean and simple - no complex layouts
         return formatted;
     }
 
-    addContextualEmojis(text) {
-        let formatted = text;
+    displayRagResults(results, query) {
+        const statusDiv = document.getElementById('ragStatus');
+        const modalBody = document.querySelector('#ragModal .modal-body');
 
-        // Add emojis based on content
-        const emojiMap = {
-            'BUY': '🟢',
-            'SELL': '🔴',
-            'TP1': '🎯',
-            'TP2': '🎯',
-            'Target': '🎯',
-            'Stop Loss': '🛑',
-            'CL': '🛑',
-            'Bullish': '📈',
-            'Bearish': '📉',
-            'Volume': '📊',
-            'Support': '🔵',
-            'Resistance': '🔴',
-            'Breakout': '🚀',
-            'Analisis': '📊',
-            'Rekomendasi': '💡',
-            'Peringatan': '⚠️',
-            'Profit': '💰',
-            'Loss': '⚠️'
-        };
+        // Remove existing results
+        const existingResults = document.querySelector('.rag-results');
+        if (existingResults) {
+            existingResults.remove();
+        }
 
-        Object.entries(emojiMap).forEach(([term, emoji]) => {
-            const regex = new RegExp(`\\b(${term})\\b`, 'gi');
-            formatted = formatted.replace(regex, `${emoji} $1`);
+        if (!results || !results.results || results.results.length === 0) {
+            statusDiv.innerHTML = '<p style="color: #856404;"><i class="fas fa-info-circle"></i> No relevant documents found for your query.</p>';
+            return;
+        }
+
+        // Hide status and show results
+        statusDiv.style.display = 'none';
+
+        // Create results container
+        const resultsDiv = document.createElement('div');
+        resultsDiv.className = 'rag-results';
+
+        const resultsHeader = document.createElement('h4');
+        resultsHeader.textContent = `Found ${results.results.length} relevant documents:`;
+        resultsHeader.style.color = '#17a2b8';
+        resultsHeader.style.marginBottom = '15px';
+        resultsDiv.appendChild(resultsHeader);
+
+        // Display each result
+        results.results.forEach((result, index) => {
+            const resultItem = document.createElement('div');
+            resultItem.className = 'rag-result-item';
+
+            resultItem.innerHTML = `
+                <div class="result-title">📄 Document ${index + 1}</div>
+                <div class="result-content">${result.content || result.text || 'No content available'}</div>
+                <div class="result-score">Similarity: ${(result.score * 100).toFixed(1)}%</div>
+            `;
+
+            // Add click handler to use this result
+            resultItem.addEventListener('click', () => {
+                this.useRagResult(result, query);
+            });
+
+            resultItem.style.cursor = 'pointer';
+            resultItem.title = 'Click to use this result in chat';
+
+            resultsDiv.appendChild(resultItem);
         });
 
-        return formatted;
+        // Add action buttons
+        const actionsDiv = document.createElement('div');
+        actionsDiv.style.marginTop = '15px';
+        actionsDiv.style.textAlign = 'center';
+
+        const useAllBtn = document.createElement('button');
+        useAllBtn.className = 'btn-primary';
+        useAllBtn.innerHTML = '<i class="fas fa-comments"></i> Ask AI about these results';
+        useAllBtn.onclick = () => this.useAllRagResults(results.results, query);
+
+        actionsDiv.appendChild(useAllBtn);
+        resultsDiv.appendChild(actionsDiv);
+
+        modalBody.appendChild(resultsDiv);
+    }
+
+    useRagResult(result, query) {
+        // Close RAG modal
+        this.hideRagModal();
+
+        // Create a message combining the query and result
+        const combinedMessage = `Based on this document: "${result.content || result.text}"\n\nPlease answer: ${query}`;
+
+        // Add to message input
+        this.messageInput.value = combinedMessage;
+
+        // Show success message
+        this.showSuccess('Document content added to your message. You can edit and send it.');
+    }
+
+    useAllRagResults(results, query) {
+        // Close RAG modal
+        this.hideRagModal();
+
+        // Combine all results
+        const combinedContent = results.map((result, index) =>
+            `Document ${index + 1}: ${result.content || result.text}`
+        ).join('\n\n');
+
+        const combinedMessage = `Based on these documents:\n\n${combinedContent}\n\nPlease answer: ${query}`;
+
+        // Add to message input
+        this.messageInput.value = combinedMessage;
+
+        // Show success message
+        this.showSuccess(`${results.length} documents added to your message. You can edit and send it.`);
     }
 }
 
