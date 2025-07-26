@@ -532,36 +532,44 @@ class SahamBot {
         // Test 1: Standard imageUrl format
         this.handleResponse({
             message: "Here's your chart:",
-            imageUrl: "https://via.placeholder.com/400x300/667eea/ffffff?text=Test+Chart+1"
+            imageUrl: "https://picsum.photos/400/300?random=1"
         });
 
         setTimeout(() => {
             // Test 2: Alternative field names
             this.handleResponse({
                 text: "Alternative format:",
-                image: "https://via.placeholder.com/400x300/28a745/ffffff?text=Test+Chart+2"
+                image: "https://picsum.photos/400/300?random=2"
             });
         }, 2000);
 
         setTimeout(() => {
-            // Test 3: Nested response
+            // Test 3: Nested response (like your n8n format)
             this.handleResponse({
                 data: {
-                    chart_url: "https://via.placeholder.com/400x300/dc3545/ffffff?text=Test+Chart+3"
+                    chart_url: "https://picsum.photos/400/300?random=3"
                 },
                 message: "Nested format:"
             });
         }, 4000);
 
         setTimeout(() => {
-            // Test 4: Base64 image
+            // Test 4: Your actual n8n format with image
+            this.handleResponse([{
+                output: "Here's your stock analysis with chart:",
+                imageUrl: "https://picsum.photos/400/300?random=4"
+            }]);
+        }, 6000);
+
+        setTimeout(() => {
+            // Test 5: Base64 image (1x1 red pixel)
             this.handleResponse({
                 text: "Base64 format:",
-                binary: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                binary: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
                 mimeType: "image/png",
                 fileName: "test.png"
             });
-        }, 6000);
+        }, 8000);
     }
 
     async handleBinaryResponse(response) {
