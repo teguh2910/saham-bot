@@ -127,6 +127,44 @@ class SahamBot {
                 this.performRagSearch();
             }
         });
+
+        // File management modal
+        document.getElementById('filesBtn').addEventListener('click', () => {
+            this.showFilesModal();
+        });
+
+        document.getElementById('closeFiles').addEventListener('click', () => {
+            this.hideFilesModal();
+        });
+
+        document.getElementById('closeFilesFooter').addEventListener('click', () => {
+            this.hideFilesModal();
+        });
+
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('fileUpload').click();
+        });
+
+        document.getElementById('fileUpload').addEventListener('change', (e) => {
+            this.handleFileUpload(e.target.files);
+        });
+
+        document.getElementById('refreshFiles').addEventListener('click', () => {
+            this.loadFilesList();
+        });
+
+        // File filters
+        document.getElementById('fileTypeFilter').addEventListener('change', () => {
+            this.filterFiles();
+        });
+
+        document.getElementById('fileSortBy').addEventListener('change', () => {
+            this.sortFiles();
+        });
+
+        document.getElementById('fileSearchInput').addEventListener('input', () => {
+            this.filterFiles();
+        });
         
         // New chat session
         document.getElementById('newChatBtn').addEventListener('click', () => {
@@ -160,6 +198,12 @@ class SahamBot {
         document.getElementById('ragModal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('ragModal')) {
                 this.hideRagModal();
+            }
+        });
+
+        document.getElementById('filesModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('filesModal')) {
+                this.hideFilesModal();
             }
         });
     }
@@ -1247,6 +1291,351 @@ class SahamBot {
 
         // Show success message
         this.showSuccess(`${results.length} documents added to your message. You can edit and send it.`);
+    }
+
+    showFilesModal() {
+        if (!this.settings.ragWebhookUrl) {
+            this.showError('Please configure your RAG webhook URL in settings first.');
+            this.showSettings();
+            return;
+        }
+
+        document.getElementById('filesModal').style.display = 'flex';
+        this.loadFilesList();
+    }
+
+    hideFilesModal() {
+        document.getElementById('filesModal').style.display = 'none';
+    }
+
+    async loadFilesList() {
+        const filesList = document.getElementById('filesList');
+        const filesStats = document.getElementById('filesStats');
+
+        // Show loading
+        filesList.innerHTML = '<div class="empty-files"><i class="fas fa-spinner fa-spin"></i><p>Loading files...</p></div>';
+        filesStats.textContent = 'Loading...';
+
+        try {
+            // Request files list from RAG service
+            const response = await fetch(`${this.settings.ragWebhookUrl}/files`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            this.displayFilesList(data.files || []);
+
+            // Update stats
+            const totalFiles = data.files ? data.files.length : 0;
+            const totalSize = data.files ? data.files.reduce((sum, file) => sum + (file.size || 0), 0) : 0;
+            filesStats.textContent = `${totalFiles} files • ${this.formatFileSize(totalSize)}`;
+
+        } catch (error) {
+            console.error('Failed to load files:', error);
+            filesList.innerHTML = `
+                <div class="empty-files">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Failed to load files: ${error.message}</p>
+                    <button class="btn-primary" onclick="window.sahamBotInstance.loadFilesList()">Retry</button>
+                </div>
+            `;
+            filesStats.textContent = 'Error loading files';
+        }
+    }
+
+    displayFilesList(files) {
+        const filesList = document.getElementById('filesList');
+
+        if (!files || files.length === 0) {
+            filesList.innerHTML = `
+                <div class="empty-files">
+                    <i class="fas fa-folder-open"></i>
+                    <p>No files uploaded yet</p>
+                    <p>Upload documents to build your knowledge base</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Store files for filtering/sorting
+        this.currentFiles = files;
+
+        // Apply current filters and sorting
+        this.filterAndSortFiles();
+    }
+
+    filterAndSortFiles() {
+        if (!this.currentFiles) return;
+
+        let filteredFiles = [...this.currentFiles];
+
+        // Apply type filter
+        const typeFilter = document.getElementById('fileTypeFilter').value;
+        if (typeFilter) {
+            filteredFiles = filteredFiles.filter(file =>
+                file.name.toLowerCase().endsWith(`.${typeFilter}`)
+            );
+        }
+
+        // Apply search filter
+        const searchTerm = document.getElementById('fileSearchInput').value.toLowerCase();
+        if (searchTerm) {
+            filteredFiles = filteredFiles.filter(file =>
+                file.name.toLowerCase().includes(searchTerm) ||
+                (file.description && file.description.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        // Apply sorting
+        const sortBy = document.getElementById('fileSortBy').value;
+        filteredFiles.sort((a, b) => {
+            switch (sortBy) {
+                case 'name':
+                    return a.name.localeCompare(b.name);
+                case 'date':
+                    return new Date(b.uploadDate || b.created_at || 0) - new Date(a.uploadDate || a.created_at || 0);
+                case 'size':
+                    return (b.size || 0) - (a.size || 0);
+                case 'status':
+                    return (a.status || 'pending').localeCompare(b.status || 'pending');
+                default:
+                    return 0;
+            }
+        });
+
+        this.renderFilesList(filteredFiles);
+    }
+
+    renderFilesList(files) {
+        const filesList = document.getElementById('filesList');
+
+        const filesHtml = files.map(file => {
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            const fileIcon = this.getFileIcon(fileExt);
+            const fileSize = this.formatFileSize(file.size || 0);
+            const uploadDate = file.uploadDate || file.created_at ?
+                new Date(file.uploadDate || file.created_at).toLocaleDateString() : 'Unknown';
+            const status = file.status || 'pending';
+
+            return `
+                <div class="file-item" data-file-id="${file.id || file.name}">
+                    <div class="file-icon ${fileExt}">
+                        <i class="fas ${fileIcon}"></i>
+                    </div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-details">Uploaded: ${uploadDate}</div>
+                    </div>
+                    <div class="file-size">${fileSize}</div>
+                    <div class="file-status ${status}">${status}</div>
+                    <div class="file-actions">
+                        <button title="Download" onclick="window.sahamBotInstance.downloadFile('${file.id || file.name}')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button title="View Details" onclick="window.sahamBotInstance.viewFileDetails('${file.id || file.name}')">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                        <button class="btn-danger" title="Delete" onclick="window.sahamBotInstance.deleteFile('${file.id || file.name}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        filesList.innerHTML = filesHtml;
+    }
+
+    getFileIcon(extension) {
+        const iconMap = {
+            'pdf': 'fa-file-pdf',
+            'txt': 'fa-file-alt',
+            'doc': 'fa-file-word',
+            'docx': 'fa-file-word',
+            'md': 'fa-file-code',
+            'default': 'fa-file'
+        };
+        return iconMap[extension] || iconMap.default;
+    }
+
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    filterFiles() {
+        this.filterAndSortFiles();
+    }
+
+    sortFiles() {
+        this.filterAndSortFiles();
+    }
+
+    async handleFileUpload(files) {
+        if (!files || files.length === 0) return;
+
+        if (!this.settings.ragWebhookUrl) {
+            this.showError('RAG webhook URL not configured. Please check settings.');
+            return;
+        }
+
+        const progressDiv = document.getElementById('uploadProgress');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
+        progressDiv.style.display = 'block';
+
+        try {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+
+                // Update progress
+                const progress = ((i + 1) / files.length) * 100;
+                progressFill.style.width = `${progress}%`;
+                progressText.textContent = `Uploading ${file.name} (${i + 1}/${files.length})`;
+
+                await this.uploadSingleFile(file);
+            }
+
+            // Upload complete
+            progressText.textContent = 'Upload complete!';
+            this.showSuccess(`Successfully uploaded ${files.length} file(s)`);
+
+            // Refresh files list
+            setTimeout(() => {
+                this.loadFilesList();
+                progressDiv.style.display = 'none';
+            }, 1000);
+
+        } catch (error) {
+            console.error('Upload failed:', error);
+            this.showError(`Upload failed: ${error.message}`);
+            progressDiv.style.display = 'none';
+        }
+
+        // Reset file input
+        document.getElementById('fileUpload').value = '';
+    }
+
+    async uploadSingleFile(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('sessionId', this.settings.sessionId);
+        formData.append('timestamp', new Date().toISOString());
+
+        const response = await fetch(`${this.settings.ragWebhookUrl}/upload`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to upload ${file.name}: ${response.status}`);
+        }
+
+        return await response.json();
+    }
+
+    async deleteFile(fileId) {
+        if (!confirm('Are you sure you want to delete this file? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${this.settings.ragWebhookUrl}/files/${fileId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            this.showSuccess('File deleted successfully');
+            this.loadFilesList();
+
+        } catch (error) {
+            console.error('Delete failed:', error);
+            this.showError(`Failed to delete file: ${error.message}`);
+        }
+    }
+
+    async downloadFile(fileId) {
+        try {
+            const response = await fetch(`${this.settings.ragWebhookUrl}/files/${fileId}/download`, {
+                method: 'GET'
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileId; // You might want to get the actual filename from response headers
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+        } catch (error) {
+            console.error('Download failed:', error);
+            this.showError(`Failed to download file: ${error.message}`);
+        }
+    }
+
+    async viewFileDetails(fileId) {
+        try {
+            const response = await fetch(`${this.settings.ragWebhookUrl}/files/${fileId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const fileDetails = await response.json();
+            this.showFileDetailsModal(fileDetails);
+
+        } catch (error) {
+            console.error('Failed to get file details:', error);
+            this.showError(`Failed to get file details: ${error.message}`);
+        }
+    }
+
+    showFileDetailsModal(fileDetails) {
+        // Create a simple details display
+        const detailsHtml = `
+            <div class="file-details-modal">
+                <h4>${fileDetails.name}</h4>
+                <p><strong>Size:</strong> ${this.formatFileSize(fileDetails.size || 0)}</p>
+                <p><strong>Type:</strong> ${fileDetails.type || 'Unknown'}</p>
+                <p><strong>Status:</strong> ${fileDetails.status || 'Unknown'}</p>
+                <p><strong>Upload Date:</strong> ${fileDetails.uploadDate ? new Date(fileDetails.uploadDate).toLocaleString() : 'Unknown'}</p>
+                ${fileDetails.description ? `<p><strong>Description:</strong> ${fileDetails.description}</p>` : ''}
+                ${fileDetails.preview ? `<div class="file-preview">${fileDetails.preview}</div>` : ''}
+            </div>
+        `;
+
+        // You could create a proper modal for this, but for now just show an alert
+        // In a real implementation, you'd want a proper modal
+        alert(`File Details:\n\nName: ${fileDetails.name}\nSize: ${this.formatFileSize(fileDetails.size || 0)}\nStatus: ${fileDetails.status || 'Unknown'}`);
     }
 }
 

@@ -25,6 +25,9 @@
                 <button class="btn-icon" id="ragBtn" title="RAG Knowledge Search">
                     <i class="fas fa-search"></i>
                 </button>
+                <button class="btn-icon" id="filesBtn" title="Manage Knowledge Files">
+                    <i class="fas fa-folder"></i>
+                </button>
                 <button class="btn-icon" id="newChatBtn" title="New Chat Session">
                     <i class="fas fa-plus"></i>
                 </button>
@@ -245,6 +248,82 @@
                 <button class="btn-primary" id="searchRag">
                     <i class="fas fa-search"></i> Search Knowledge Base
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Management Modal -->
+    <div class="modal" id="filesModal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Knowledge Base Files</h3>
+                <button class="btn-close" id="closeFiles">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="files-header">
+                    <div class="files-info">
+                        <div class="info-icon">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <p>Manage your knowledge base documents for RAG search</p>
+                    </div>
+
+                    <div class="files-actions">
+                        <div class="upload-section">
+                            <input type="file" id="fileUpload" multiple accept=".pdf,.txt,.doc,.docx,.md" style="display: none;">
+                            <button class="btn-primary" id="uploadBtn">
+                                <i class="fas fa-upload"></i> Upload Files
+                            </button>
+                        </div>
+                        <div class="files-stats" id="filesStats">
+                            <span>Loading files...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="files-filters">
+                    <div class="filter-group">
+                        <label for="fileTypeFilter">Filter by type:</label>
+                        <select id="fileTypeFilter">
+                            <option value="">All types</option>
+                            <option value="pdf">PDF</option>
+                            <option value="txt">Text</option>
+                            <option value="doc">Word</option>
+                            <option value="md">Markdown</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="fileSortBy">Sort by:</label>
+                        <select id="fileSortBy">
+                            <option value="name">Name</option>
+                            <option value="date" selected>Upload Date</option>
+                            <option value="size">File Size</option>
+                            <option value="status">Status</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <input type="text" id="fileSearchInput" placeholder="Search files...">
+                    </div>
+                </div>
+
+                <div class="files-list" id="filesList">
+                    <!-- Files will be populated here -->
+                </div>
+
+                <div class="upload-progress" id="uploadProgress" style="display: none;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text" id="progressText">Uploading...</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="refreshFiles">
+                    <i class="fas fa-sync"></i> Refresh
+                </button>
+                <button class="btn-secondary" id="closeFilesFooter">Close</button>
             </div>
         </div>
     </div>

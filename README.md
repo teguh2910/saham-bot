@@ -109,13 +109,18 @@ https://your-n8n-instance.com/webhook/your-webhook-id
 - Supports JPEG, PNG, and other common formats
 - Images automatically uploaded to hosting services
 
-### RAG Knowledge Search
+### RAG Knowledge Search & File Management
 - **Document Search**: Click the search button (🔍) to access RAG functionality
+- **File Management**: Click the folder button (📁) to upload and manage documents
 - **Knowledge Base Query**: Search through your uploaded documents and knowledge base
+- **File Upload**: Support for PDF, TXT, DOC, DOCX, and Markdown files
+- **File Organization**: Filter, sort, and search through your uploaded documents
+- **Processing Status**: Track document processing status in real-time
 - **Similarity Matching**: Configurable similarity thresholds for relevant results
 - **Multiple Results**: Get multiple relevant documents for comprehensive answers
 - **Interactive Results**: Click on results to use them in your chat
 - **Smart Integration**: Combine search results with AI responses
+- **File Operations**: Download, view details, and delete files as needed
 - **Separate Webhook**: Uses dedicated RAG webhook URL for knowledge retrieval
 
 ### Chat History & Session Management
