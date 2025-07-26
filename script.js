@@ -104,67 +104,73 @@ class SahamBot {
             this.startNewChatSession();
         });
 
-        // RAG modal
-        document.getElementById('ragBtn').addEventListener('click', () => {
-            this.showRagModal();
-        });
+        // File management modal - with null checks
+        const filesBtnEl = document.getElementById('filesBtn');
+        if (filesBtnEl) {
+            filesBtnEl.addEventListener('click', () => {
+                this.showFilesModal();
+            });
+        }
 
-        document.getElementById('closeRag').addEventListener('click', () => {
-            this.hideRagModal();
-        });
+        const closeFilesEl = document.getElementById('closeFiles');
+        if (closeFilesEl) {
+            closeFilesEl.addEventListener('click', () => {
+                this.hideFilesModal();
+            });
+        }
 
-        document.getElementById('cancelRag').addEventListener('click', () => {
-            this.hideRagModal();
-        });
+        const closeFilesFooterEl = document.getElementById('closeFilesFooter');
+        if (closeFilesFooterEl) {
+            closeFilesFooterEl.addEventListener('click', () => {
+                this.hideFilesModal();
+            });
+        }
 
-        document.getElementById('searchRag').addEventListener('click', () => {
-            this.performRagSearch();
-        });
+        const uploadBtnEl = document.getElementById('uploadBtn');
+        if (uploadBtnEl) {
+            uploadBtnEl.addEventListener('click', () => {
+                const fileUploadEl = document.getElementById('fileUpload');
+                if (fileUploadEl) {
+                    fileUploadEl.click();
+                }
+            });
+        }
 
-        // RAG query enter key
-        document.getElementById('ragQuery').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
-                this.performRagSearch();
-            }
-        });
+        const fileUploadEl = document.getElementById('fileUpload');
+        if (fileUploadEl) {
+            fileUploadEl.addEventListener('change', (e) => {
+                this.handleFileUpload(e.target.files);
+            });
+        }
 
-        // File management modal
-        document.getElementById('filesBtn').addEventListener('click', () => {
-            this.showFilesModal();
-        });
+        const refreshFilesEl = document.getElementById('refreshFiles');
+        if (refreshFilesEl) {
+            refreshFilesEl.addEventListener('click', () => {
+                this.loadFilesList();
+            });
+        }
 
-        document.getElementById('closeFiles').addEventListener('click', () => {
-            this.hideFilesModal();
-        });
+        // File filters - with null checks
+        const fileTypeFilterEl = document.getElementById('fileTypeFilter');
+        if (fileTypeFilterEl) {
+            fileTypeFilterEl.addEventListener('change', () => {
+                this.filterFiles();
+            });
+        }
 
-        document.getElementById('closeFilesFooter').addEventListener('click', () => {
-            this.hideFilesModal();
-        });
+        const fileSortByEl = document.getElementById('fileSortBy');
+        if (fileSortByEl) {
+            fileSortByEl.addEventListener('change', () => {
+                this.sortFiles();
+            });
+        }
 
-        document.getElementById('uploadBtn').addEventListener('click', () => {
-            document.getElementById('fileUpload').click();
-        });
-
-        document.getElementById('fileUpload').addEventListener('change', (e) => {
-            this.handleFileUpload(e.target.files);
-        });
-
-        document.getElementById('refreshFiles').addEventListener('click', () => {
-            this.loadFilesList();
-        });
-
-        // File filters
-        document.getElementById('fileTypeFilter').addEventListener('change', () => {
-            this.filterFiles();
-        });
-
-        document.getElementById('fileSortBy').addEventListener('change', () => {
-            this.sortFiles();
-        });
-
-        document.getElementById('fileSearchInput').addEventListener('input', () => {
-            this.filterFiles();
-        });
+        const fileSearchInputEl = document.getElementById('fileSearchInput');
+        if (fileSearchInputEl) {
+            fileSearchInputEl.addEventListener('input', () => {
+                this.filterFiles();
+            });
+        }
         
         // New chat session
         document.getElementById('newChatBtn').addEventListener('click', () => {
@@ -195,12 +201,7 @@ class SahamBot {
             }
         });
 
-        document.getElementById('ragModal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('ragModal')) {
-                this.hideRagModal();
-            }
-        });
-
+        
         document.getElementById('filesModal').addEventListener('click', (e) => {
             if (e.target === document.getElementById('filesModal')) {
                 this.hideFilesModal();
@@ -1107,13 +1108,6 @@ class SahamBot {
 
     hideRagModal() {
         document.getElementById('ragModal').style.display = 'none';
-        // Reset advanced options to collapsed state
-        const advancedOptions = document.getElementById('ragAdvancedOptions');
-        const toggle = document.querySelector('.advanced-toggle');
-        if (advancedOptions && toggle) {
-            advancedOptions.classList.remove('show');
-            toggle.classList.remove('active');
-        }
     }
 
     async performRagSearch() {
@@ -1202,111 +1196,9 @@ class SahamBot {
         return formatted;
     }
 
-    displayRagResults(results, query) {
-        const statusDiv = document.getElementById('ragStatus');
-        const modalBody = document.querySelector('#ragModal .modal-body');
 
-        // Remove existing results
-        const existingResults = document.querySelector('.rag-results');
-        if (existingResults) {
-            existingResults.remove();
-        }
-
-        if (!results || !results.results || results.results.length === 0) {
-            statusDiv.innerHTML = '<p style="color: #856404;"><i class="fas fa-info-circle"></i> No relevant documents found for your query.</p>';
-            return;
-        }
-
-        // Hide status and show results
-        statusDiv.style.display = 'none';
-
-        // Create results container
-        const resultsDiv = document.createElement('div');
-        resultsDiv.className = 'rag-results';
-
-        const resultsHeader = document.createElement('h4');
-        resultsHeader.textContent = `Found ${results.results.length} relevant documents:`;
-        resultsHeader.style.color = '#17a2b8';
-        resultsHeader.style.marginBottom = '15px';
-        resultsDiv.appendChild(resultsHeader);
-
-        // Display each result
-        results.results.forEach((result, index) => {
-            const resultItem = document.createElement('div');
-            resultItem.className = 'rag-result-item';
-
-            resultItem.innerHTML = `
-                <div class="result-title">📄 Document ${index + 1}</div>
-                <div class="result-content">${result.content || result.text || 'No content available'}</div>
-                <div class="result-score">Similarity: ${(result.score * 100).toFixed(1)}%</div>
-            `;
-
-            // Add click handler to use this result
-            resultItem.addEventListener('click', () => {
-                this.useRagResult(result, query);
-            });
-
-            resultItem.style.cursor = 'pointer';
-            resultItem.title = 'Click to use this result in chat';
-
-            resultsDiv.appendChild(resultItem);
-        });
-
-        // Add action buttons
-        const actionsDiv = document.createElement('div');
-        actionsDiv.style.marginTop = '15px';
-        actionsDiv.style.textAlign = 'center';
-
-        const useAllBtn = document.createElement('button');
-        useAllBtn.className = 'btn-primary';
-        useAllBtn.innerHTML = '<i class="fas fa-comments"></i> Ask AI about these results';
-        useAllBtn.onclick = () => this.useAllRagResults(results.results, query);
-
-        actionsDiv.appendChild(useAllBtn);
-        resultsDiv.appendChild(actionsDiv);
-
-        modalBody.appendChild(resultsDiv);
-    }
-
-    useRagResult(result, query) {
-        // Close RAG modal
-        this.hideRagModal();
-
-        // Create a message combining the query and result
-        const combinedMessage = `Based on this document: "${result.content || result.text}"\n\nPlease answer: ${query}`;
-
-        // Add to message input
-        this.messageInput.value = combinedMessage;
-
-        // Show success message
-        this.showSuccess('Document content added to your message. You can edit and send it.');
-    }
-
-    useAllRagResults(results, query) {
-        // Close RAG modal
-        this.hideRagModal();
-
-        // Combine all results
-        const combinedContent = results.map((result, index) =>
-            `Document ${index + 1}: ${result.content || result.text}`
-        ).join('\n\n');
-
-        const combinedMessage = `Based on these documents:\n\n${combinedContent}\n\nPlease answer: ${query}`;
-
-        // Add to message input
-        this.messageInput.value = combinedMessage;
-
-        // Show success message
-        this.showSuccess(`${results.length} documents added to your message. You can edit and send it.`);
-    }
 
     showFilesModal() {
-        if (!this.settings.ragWebhookUrl) {
-            this.showError('Please configure your RAG webhook URL in settings first.');
-            this.showSettings();
-            return;
-        }
-
         document.getElementById('filesModal').style.display = 'flex';
         this.loadFilesList();
     }
@@ -1643,17 +1535,6 @@ class SahamBot {
         // You could create a proper modal for this, but for now just show an alert
         // In a real implementation, you'd want a proper modal
         alert(`File Details:\n\nName: ${fileDetails.name}\nSize: ${this.formatFileSize(fileDetails.size || 0)}\nStatus: ${fileDetails.status || 'Unknown'}`);
-    }
-}
-
-// Toggle advanced options in RAG modal
-function toggleAdvancedOptions() {
-    const advancedOptions = document.getElementById('ragAdvancedOptions');
-    const toggle = document.querySelector('.advanced-toggle');
-
-    if (advancedOptions && toggle) {
-        advancedOptions.classList.toggle('show');
-        toggle.classList.toggle('active');
     }
 }
 
