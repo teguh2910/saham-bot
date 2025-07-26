@@ -12,7 +12,7 @@ class SahamBot {
         // Settings
         this.settings = {
             webhookUrl: localStorage.getItem('webhookUrl') || 'https://worker1.servercikarang.cloud/webhook/teguh',
-            ragWebhookUrl: localStorage.getItem('ragWebhookUrl') || '',
+            ragWebhookUrl: localStorage.getItem('ragWebhookUrl') || 'https://n8n.servercikarang.cloud/webhook/teguh-rag',
             sessionId: localStorage.getItem('sessionId') || this.generateSessionId(),
             userPhone: localStorage.getItem('userPhone') || '6281234567890',
             imgbbApiKey: localStorage.getItem('imgbbApiKey') || ''
@@ -1001,6 +1001,7 @@ class SahamBot {
     showSettings() {
         // Load current settings into form
         document.getElementById('webhookUrl').value = this.settings.webhookUrl;
+        document.getElementById('ragWebhookUrl').value = this.settings.ragWebhookUrl;
         document.getElementById('sessionId').value = this.settings.sessionId;
         document.getElementById('userPhone').value = this.settings.userPhone;
         document.getElementById('imgbbApiKey').value = this.settings.imgbbApiKey;
